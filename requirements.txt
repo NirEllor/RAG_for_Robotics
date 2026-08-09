@@ -1,0 +1,21 @@
+# Core dependencies
+hydra-core>=1.3
+omegaconf>=2.3
+numpy>=1.21
+torch>=2.0
+pandas>=1.3
+pyarrow>=10.0
+scipy>=1.7
+scikit-learn>=1.0
+matplotlib>=3.4
+Pillow>=8.0
+pytest>=6.2
+
+# Optional dependencies (install with pip install -e ".[faiss,3d,dev]")
+# faiss-cpu>=1.7
+# open3d>=0.13
+# pytest-cov
+# black
+# isort
+# flake8
+# mypy
