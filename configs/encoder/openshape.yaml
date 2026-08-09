@@ -1,0 +1,14 @@
+name: openshape
+type: 3d_foundation
+status: OPTIONAL_NOT_YET_IMPLEMENTED
+
+# OpenShape foundation model (requires sparse-conv backends like MinkowskiEngine).
+# Status: Deferred for MVP (Phase 2); CPU build of sparse convolutions is
+# known to be painful without CUDA. Implement only after Uni3D attempt if time permits.
+
+checkpoint: null
+pretrained: true
+frozen: true
+output_dim: 768
+
+note: "Deferred due to sparse-conv CPU build complexity. Use Uni3D instead."

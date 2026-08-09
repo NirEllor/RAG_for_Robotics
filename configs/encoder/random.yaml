@@ -1,0 +1,8 @@
+name: random
+type: random
+seed: 42
+output_dim: 512
+
+# Random retrieval is not really an encoder; this is a placeholder config.
+# The actual RandomRetriever backend ignores the encoder entirely and selects
+# database items uniformly with this seed.

@@ -1,0 +1,4 @@
+name: none
+type: identity
+
+# No adapter; use frozen encoder embeddings directly.

@@ -1,0 +1,4 @@
+name: none
+type: identity
+
+# No downstream predictor; evaluation ends at retrieval metrics.

@@ -1,0 +1,14 @@
+name: pose_descriptor
+type: pose_descriptor
+output_dim: 14
+
+# Explicit geometric descriptor:
+# [target_position (3), target_rotation_quat (4), gripper_position (3), target-to-gripper_delta (3), gripper_open (1)]
+# = 14 dimensions, no learned parameters.
+
+include_fields:
+  - target_position
+  - target_rotation_quaternion
+  - gripper_position
+  - gripper_delta
+  - gripper_open

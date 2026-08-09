@@ -1,0 +1,24 @@
+name: rlbench_reach_target
+task_name: ReachTarget
+variation_id: 0
+num_episodes: 15
+episode_seeds: []
+
+observation:
+  cameras:
+    - front_rgb
+  camera_resolution: [128, 128]
+  image_format: rgb
+  depth_available: false
+
+point_cloud:
+  enabled: true
+  target_crop: true
+  crop_size: 256
+  crop_margin: 0.1
+  xyz_only: true
+
+snapshot_policy: initial
+
+data_root: data/processed/v1_reach_target
+split_seed: 42

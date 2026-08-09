@@ -1,0 +1,5 @@
+name: clean
+type: identity
+
+# Identity perturbation (no transformation).
+# Used as the baseline "clean" condition for all experiments.

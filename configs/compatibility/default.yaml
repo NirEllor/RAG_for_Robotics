@@ -1,0 +1,24 @@
+name: default
+type: trajectory_action_distance
+
+# Action-compatibility ground truth from trajectories.
+# Distance components:
+#   - goal/displacement distance (alpha)
+#   - trajectory-shape DTW distance (beta)
+#   - rotation distance (gamma)
+#   - gripper state distance (eta)
+
+coordinate_frame: world
+
+weights:
+  alpha: 0.5   # goal/displacement
+  beta: 0.4    # trajectory shape (DTW)
+  gamma: 0.05  # rotation
+  eta: 0.05    # gripper
+
+compatibility_score: exp_neg  # exp(-D / sigma)
+sigma: 1.0
+
+# Binary relevance threshold (determined on train/val only).
+positive_threshold: 0.5
+negative_threshold: 0.3

@@ -1,0 +1,23 @@
+defaults:
+  - dataset: rlbench_reach_target
+  - encoder: random
+  - retrieval: exact_cosine
+  - compatibility: default
+  - perturbation: clean
+  - adapter: none
+  - downstream: none
+  - experiment: smoke
+  - _self_
+
+experiment:
+  name: "reach_target_random_clean"
+  seed: 42
+  output_root: outputs
+  deterministic: true
+
+runtime:
+  device: cpu
+  num_workers: 1
+  precision: float32
+  fail_on_missing_cache: false
+  log_level: INFO

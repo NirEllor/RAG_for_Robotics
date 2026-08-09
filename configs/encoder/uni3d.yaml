@@ -1,0 +1,17 @@
+name: uni3d
+type: 3d_foundation
+status: OPTIONAL_NOT_YET_IMPLEMENTED
+
+# Uni3D foundation model for 3D scene understanding.
+# Status: Optional; falls back to pose_descriptor + PCA-on-points if Uni3D
+# proves too heavy for CPU-only WSL2 (7.6GB RAM).
+# Implementation scheduled after Phase 2 MVP (exact cosine baseline with
+# random/pose/image encoders).
+
+model_size: small  # Options: small, medium, large (CPU-only, prefer small)
+checkpoint: null   # Will be downloaded on first use if implemented
+pretrained: true
+frozen: true
+output_dim: 768
+
+note: "See CLAUDE.md 'Resolved Design Decisions' #5 for fallback rationale."

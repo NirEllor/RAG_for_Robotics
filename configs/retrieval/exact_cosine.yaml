@@ -1,0 +1,10 @@
+name: exact_cosine
+type: exact_cosine
+k: 5
+
+# Exact cosine similarity retrieval using normalized embeddings.
+# Retrieval: argmax_i sim(z_query, z_i) where sim = z^T z / (||z|| * ||z_i||).
+# Database embeddings are precomputed and cached.
+
+candidate_scope: same_task
+exclude_query_episode: true
