@@ -36,9 +36,30 @@ For most experiments, the best compromise is:
 - use the cluster for large experiments,
 - transfer only the processed dataset and important outputs.
 
+## If the cluster starts from zero
+
+Use the following order:
+
+1. `./slurm/run_fetch_rlbench_mirror.sh`
+2. `./slurm/run_build_multitask_dataset.sh`
+3. `./slurm/run_evaluate.sh`
+
+Or, if you want a single convenience command:
+
+1. `./slurm/run_prepare_cluster_data.sh`
+
+That will download the raw RLBench mirror on the cluster, then build the
+processed dataset after the download job completes successfully.
+
+The fetch job writes directly into:
+
+- `RAG_for_Robotics/data/rlbench/raw`
+
+That path is ignored by Git, so it is safe to use on the cluster without
+polluting the repository history.
+
 ## GPU-ready future encoders
 
 The current codebase already has a retrieval interface that can be extended with
 `uni3d` and `ptv3` selectors. The `slurm/run_future_3d_encoder.sh` script is a
 placeholder launcher for when those backends are implemented.
-
