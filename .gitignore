@@ -98,6 +98,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv-wsl/
 env/
 venv/
 ENV/
@@ -125,6 +126,8 @@ dmypy.json
 # Project-specific
 data/
 outputs/
+third_party/PyRep/
+third_party/RLBench/
 *.npz
 *.npy
 *.parquet

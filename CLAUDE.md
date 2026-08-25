@@ -77,9 +77,9 @@ Consequences:
 - **Phase 4-6 (pending):** Robustness, adaptation, downstream evaluation.
 - **Phase 7 (pending):** Flow Matching stretch goal.
 
-**Current status: Phase 0 code scaffold underway. You (or the next Claude session) can begin Phase 1
-only after the user reports that `scripts/smoke_env.py` (the Phase-0 acceptance script) successfully
-boots PyRep and generates/loads one ReachTarget episode.**
+**Current status: Phase 1 dataset/export scaffold underway.** Phase 0 acceptance has been satisfied
+through the saved-demo fallback path in `scripts/smoke_env.py`, so the next step is exporting the
+Phase 1 ReachTarget dataset and validating the manifest/split layout.
 
 ## Environment Setup (For Users and Future Sessions)
 

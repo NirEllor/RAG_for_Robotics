@@ -1,0 +1,146 @@
+data_root: data/processed/v2_multitask
+split_seed: 42
+dataset_task_name: mixed
+snapshot_policy: initial
+source_root: data/rlbench/raw
+source_split: train
+source_layout: peract_raw
+
+point_cloud:
+  target_crop: true
+  crop_size: 256
+  crop_margin: 0.1
+  xyz_only: true
+
+tasks:
+  - task_name: reach_target
+    variation_id: 0
+    num_episodes: 4
+    source_kind: saved_demo
+    required: true
+
+  - task_name: open_drawer
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: slide_block_to_color_target
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: sweep_to_dustpan_of_size
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: meat_off_grill
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: turn_tap
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: put_item_in_drawer
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: close_jar
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: reach_and_drag
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: stack_blocks
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: light_bulb_in
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: put_money_in_safe
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: place_wine_at_rack_location
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: put_groceries_in_cupboard
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: place_shape_in_shape_sorter
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: push_buttons
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: insert_onto_square_peg
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: stack_cups
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false
+
+  - task_name: place_cups
+    num_episodes: 100
+    source_kind: peract_raw
+    source_layout: peract_raw
+    source_split: train
+    required: false

@@ -1,0 +1,8 @@
+name: rgb_histogram
+type: rgb_histogram
+output_dim: 240
+
+# Appearance-only baseline built from global + local RGB statistics on the
+# first and last frames of the episode.
+# This intentionally ignores point clouds and robot state so we can compare
+# pure appearance retrieval against the geometry-heavy pose descriptor.

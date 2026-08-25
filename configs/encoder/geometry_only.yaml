@@ -1,0 +1,7 @@
+name: geometry_only
+type: geometry_only
+output_dim: 86
+
+# Geometry-only baseline built from point cloud and robot kinematics.
+# This intentionally ignores RGB so we can compare pure geometry retrieval
+# against the RGB histogram and mixed pose descriptor baselines.

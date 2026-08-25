@@ -49,8 +49,11 @@ viz = [
 Repository = "https://github.com/NirEllor/RAG_for_Robotics"
 
 [tool.setuptools]
-packages = ["action_retrieval"]
 package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["action_retrieval*"]
 
 [tool.setuptools.package-data]
 action_retrieval = ["py.typed"]

@@ -4,7 +4,7 @@
 similar and action-compatible for robotic manipulation, and are they more robust than image representations
 under viewpoint, appearance, noise, and partial-observation changes?
 
-**Status:** Phase 0 scaffolding (environment setup in progress).
+**Status:** dataset ingestion, retrieval baselines, and evaluation are in progress.
 
 ## Quick Start
 
@@ -23,6 +23,12 @@ See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. 
 - The spec ([3d_retrieval_experiment_infrastructure_spec.md](3d_retrieval_experiment_infrastructure_spec.md))
   is authoritative; this README is a summary.
 - Each phase is gated by the previous phase's acceptance tests. Do not skip phases.
+
+### Helpful Project Docs
+
+- [PROJECT_DICTIONARY.md](PROJECT_DICTIONARY.md) - plain-language terms and file guide.
+- [EVALUATION_PROTOCOL.md](EVALUATION_PROTOCOL.md) - how retrieval is evaluated.
+- [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) - near-term and mid-term milestones.
 
 ## Repository Structure
 
@@ -59,13 +65,15 @@ pip install -e .
 
 ## Current Phase
 
-**Phase 0: Environment Feasibility**
+**Current work: Dataset expansion and retrieval evaluation**
 
-- Repo skeleton created (config/src/scripts/tests layout).
-- Smoke-test script (`scripts/smoke_env.py`) ready.
-- Awaiting user confirmation that WSL2/CoppeliaSim setup succeeded.
+- Phase 0 smoke test passes via the saved-demo fallback path.
+- The repo now supports both saved RLBench demos and raw RLBench mirror ingestion.
+- `scripts/build_multitask_dataset.py` can build a multi-task dataset from the configured sources.
+- Retrieval baselines and evaluation scripts already exist.
 
-Once Phase 0 is confirmed working, Phase 1 (dataset generation) can begin.
+The current practical focus is to finish dataset scaling, then keep improving
+retrieval and evaluation.
 
 ## License
 
