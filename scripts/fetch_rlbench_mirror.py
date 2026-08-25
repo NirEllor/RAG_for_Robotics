@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 import time
 import zipfile
@@ -87,29 +86,27 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _run_download(args: argparse.Namespace) -> None:
-    command = [
-        "huggingface-cli",
-        "download",
-        args.repo_id,
-        "--repo-type",
-        args.repo_type,
-        "--revision",
-        args.revision,
-        "--local-dir",
-        str(args.stage_dir),
-        "--local-dir-use-symlinks",
-        "False",
-        "--max-workers",
-        "4",
-    ]
-    if args.force_download:
-        command.append("--force-download")
-    for pattern in args.include:
-        command.extend(["--include", pattern])
+    try:
+        from huggingface_hub import snapshot_download
+    except ImportError as exc:
+        raise RuntimeError(
+            "Missing dependency: huggingface_hub. "
+            "Run `python3 -m pip install -e .` inside the project venv."
+        ) from exc
 
-    print("Downloading from Hugging Face:")
-    print(" ".join(command))
-    subprocess.run(command, check=True)
+    print("Downloading from Hugging Face via huggingface_hub.snapshot_download")
+    print(f"repo_id={args.repo_id} repo_type={args.repo_type} revision={args.revision}")
+    print(f"local_dir={args.stage_dir}")
+    snapshot_download(
+        repo_id=args.repo_id,
+        repo_type=args.repo_type,
+        revision=args.revision,
+        local_dir=args.stage_dir,
+        local_dir_use_symlinks=False,
+        max_workers=4,
+        allow_patterns=list(args.include),
+        force_download=args.force_download,
+    )
 
 
 def _extract_one_archive(

@@ -21,6 +21,15 @@ global Python installation.
 4. Point the dataset and output roots to cluster storage.
 5. Submit jobs through the `run_*.sh` helpers.
 
+After every `git pull`, rerun:
+
+```bash
+python3 -m pip install -e .
+```
+
+That keeps the venv aligned with the current `pyproject.toml` dependencies,
+including `huggingface_hub`.
+
 ## Data connection strategy
 
 There are three practical options:
