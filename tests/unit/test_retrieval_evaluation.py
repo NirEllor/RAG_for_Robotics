@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 from action_retrieval.evaluation.retrieval_eval import (
     evaluate_retrieval_methods,
@@ -21,14 +25,66 @@ def test_load_relevance_annotations(tmp_path: Path):
     assert annotations["episode0"] == {"episode1"}
 
 
-def test_evaluate_retrieval_methods_returns_multiple_cutoffs():
-    dataset_root = Path("data/processed/v1_reach_target")
+def _write_exported_episode(dataset_root: Path, episode_id: str, task_name: str) -> None:
+    observation_dir = dataset_root / "observation"
+    trajectory_dir = dataset_root / "trajectory"
+    metadata_dir = dataset_root / "metadata"
+    observation_dir.mkdir(parents=True, exist_ok=True)
+    trajectory_dir.mkdir(parents=True, exist_ok=True)
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+
+    np.savez(
+        observation_dir / f"{episode_id}.npz",
+        front_rgb=np.zeros((2, 4, 4, 3), dtype=np.uint8),
+        front_point_cloud_world=np.zeros((2, 4, 4, 3), dtype=np.float32),
+    )
+    np.savez(
+        trajectory_dir / f"{episode_id}.npz",
+        joint_positions=np.zeros((2, 7), dtype=np.float32),
+        joint_velocities=np.zeros((2, 7), dtype=np.float32),
+        gripper_pose=np.zeros((2, 7), dtype=np.float32),
+        gripper_open=np.zeros((2,), dtype=np.float32),
+    )
+    (metadata_dir / f"{episode_id}.json").write_text(
+        json.dumps({"episode": {"seed": 42}, "task_name": task_name}),
+        encoding="utf-8",
+    )
+
+
+def _write_minimal_dataset(dataset_root: Path) -> None:
+    rows = []
+    for episode_id, task_name, split in [
+        ("episode0", "reach_target", "train"),
+        ("episode1", "reach_target", "train"),
+        ("episode2", "reach_target", "train"),
+        ("episode3", "reach_target", "train"),
+    ]:
+        _write_exported_episode(dataset_root, episode_id, task_name)
+        rows.append(
+            {
+                "episode_id": episode_id,
+                "task_name": task_name,
+                "split": split,
+                "observation_path": f"observation/{episode_id}.npz",
+                "trajectory_path": f"trajectory/{episode_id}.npz",
+                "metadata_path": f"metadata/{episode_id}.json",
+            }
+        )
+
+    pd.DataFrame(rows).to_parquet(dataset_root / "manifest.parquet", index=False)
+
+
+def test_evaluate_retrieval_methods_returns_multiple_cutoffs(tmp_path: Path):
+    dataset_root = tmp_path / "v1_reach_target"
     annotations = {
         "episode0": {"episode1"},
         "episode1": {"episode0"},
         "episode2": {"episode3"},
         "episode3": {"episode2"},
     }
+
+    dataset_root.mkdir(parents=True, exist_ok=True)
+    _write_minimal_dataset(dataset_root)
 
     runs = evaluate_retrieval_methods(
         dataset_root,
