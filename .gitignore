@@ -128,6 +128,8 @@ data/
 outputs/
 third_party/PyRep/
 third_party/RLBench/
+!src/action_retrieval/data/
+!src/action_retrieval/data/*.py
 *.npz
 *.npy
 *.parquet
