@@ -17,6 +17,7 @@ tasks:
     variation_id: 0
     num_episodes: 4
     source_kind: saved_demo
+    source_layout: rlbench_saved
     required: true
 
   - task_name: open_drawer
