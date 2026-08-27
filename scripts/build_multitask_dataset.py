@@ -54,6 +54,10 @@ def _task_cfg_value(task_cfg, key: str, default=None):
     return default
 
 
+def _log(message: str) -> None:
+    print(message, flush=True)
+
+
 def main() -> int:
     args = _parse_args()
     cfg = OmegaConf.load(args.config)
@@ -70,10 +74,18 @@ def main() -> int:
     if not task_specs:
         raise ValueError("Config must define at least one task under `tasks`.")
 
+    _log("=" * 80)
+    _log("Phase 2: Multitask dataset export")
+    _log("=" * 80)
+    _log(f"Config: {args.config}")
+    _log(f"Dataset root: {dataset_root}")
+    _log(f"Split seed: {split_seed}")
+    _log(f"Tasks configured: {len(task_specs)}")
+
     specs: list[RLBenchDemoSpec] = []
     summary_rows: list[tuple[str, int, int]] = []
 
-    for task_cfg in task_specs:
+    for task_index, task_cfg in enumerate(task_specs, start=1):
         task_name = str(_task_cfg_value(task_cfg, "task_name"))
         requested = int(_task_cfg_value(task_cfg, "num_episodes", 0))
         variation_id = int(_task_cfg_value(task_cfg, "variation_id", 0))
@@ -84,6 +96,16 @@ def main() -> int:
         required = bool(_task_cfg_value(task_cfg, "required", False))
         source_layout = str(_task_cfg_value(task_cfg, "source_layout", default_source_layout))
         source_split = str(_task_cfg_value(task_cfg, "source_split", default_source_split))
+
+        _log(
+            f"[task {task_index}/{len(task_specs)}] {task_name} "
+            f"(layout={source_layout}, kind={source_kind}, requested={requested}, "
+            f"variation={variation_id}, from_episode={from_episode_number}, required={required})"
+        )
+        if source_roots:
+            _log(f"  source_roots: {[str(root) for root in source_roots]}")
+        else:
+            _log("  source_roots: <default search roots>")
 
         try:
             if source_layout == "peract_raw":
@@ -104,10 +126,17 @@ def main() -> int:
                     from_episode_number=from_episode_number,
                     search_roots=source_roots,
                 )
+            _log(
+                f"  resolved_source_root: {resolved_source_root}"
+            )
+            _log(
+                f"  loaded_demos: {len(demos)} "
+                f"(episodes={len(source_episode_dirs)})"
+            )
         except Exception as exc:
             if required:
                 raise
-            print(f"WARNING: Skipping task {task_name}: {exc}")
+            _log(f"WARNING: Skipping task {task_name}: {exc}")
             summary_rows.append((task_name, requested, 0))
             continue
 
@@ -125,10 +154,14 @@ def main() -> int:
                 )
             )
         summary_rows.append((task_name, requested, len(demos)))
+        _log(f"  queued_for_export: {len(demos)}")
+
+    _log(f"Collected specs: {len(specs)}")
 
     if not specs:
         raise RuntimeError("No demos were collected from the configured tasks.")
 
+    _log("Starting export to disk...")
     result = export_rlbench_dataset_from_specs(
         dataset_root=dataset_root,
         specs=specs,
@@ -143,16 +176,16 @@ def main() -> int:
         dataset_task_name=dataset_task_name,
     )
 
-    print("=" * 80)
-    print("Phase 2: Multitask dataset export")
-    print("=" * 80)
-    print(f"Dataset root: {result.dataset_root}")
-    print(f"Manifest: {result.manifest_path}")
-    print(f"Metadata: {result.metadata_path}")
-    print(f"Splits: {result.split_path}")
-    print(f"Episodes exported: {result.num_exported_episodes}")
+    _log("=" * 80)
+    _log("Phase 2: Multitask dataset export complete")
+    _log("=" * 80)
+    _log(f"Dataset root: {result.dataset_root}")
+    _log(f"Manifest: {result.manifest_path}")
+    _log(f"Metadata: {result.metadata_path}")
+    _log(f"Splits: {result.split_path}")
+    _log(f"Episodes exported: {result.num_exported_episodes}")
     for task_name, requested, exported in summary_rows:
-        print(f"  {task_name}: requested={requested}, exported={exported}")
+        _log(f"  {task_name}: requested={requested}, exported={exported}")
     return 0
 
 
