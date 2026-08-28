@@ -119,7 +119,8 @@ def main() -> int:
             _log(f"WARNING: Could not read existing manifest for resume: {exc}")
             existing_task_names = set()
 
-    for task_index, task_cfg in enumerate(task_specs, start=start_index):
+    for local_task_index, task_cfg in enumerate(task_specs, start=1):
+        task_index = start_index + local_task_index - 1
         task_name = str(_task_cfg_value(task_cfg, "task_name"))
         requested = int(_task_cfg_value(task_cfg, "num_episodes", 0))
         variation_id = int(_task_cfg_value(task_cfg, "variation_id", 0))
@@ -132,8 +133,8 @@ def main() -> int:
         source_split = str(_task_cfg_value(task_cfg, "source_split", default_source_split))
 
         _log(
-            f"[task {task_index}/{len(task_specs)}] {task_name} "
-            f"(layout={source_layout}, kind={source_kind}, requested={requested}, "
+            f"[task {local_task_index}/{len(task_specs)}] {task_name} "
+            f"(absolute_index={task_index}, layout={source_layout}, kind={source_kind}, requested={requested}, "
             f"variation={variation_id}, from_episode={from_episode_number}, required={required})"
         )
         if source_roots:
@@ -200,8 +201,8 @@ def main() -> int:
             dataset_root=dataset_root,
             specs=specs,
             split_seed=split_seed,
-            overwrite=args.overwrite and task_index == start_index and not args.resume,
-            resume=args.resume or task_index != start_index or manifest_path.exists(),
+            overwrite=args.overwrite and local_task_index == 1 and not args.resume,
+            resume=args.resume or local_task_index != 1 or manifest_path.exists(),
             snapshot_policy=str(cfg.snapshot_policy),
             target_crop_enabled=bool(cfg.point_cloud.target_crop),
             target_crop_size=int(cfg.point_cloud.crop_size),
