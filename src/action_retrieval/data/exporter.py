@@ -345,7 +345,7 @@ def export_rlbench_dataset_from_specs(
             task_name=task_name,
             episode_id=episode_id,
             variation_id=variation_id,
-            seed=split_seed + index,
+            seed=split_seed + next_episode_index + offset,
             split="",
             success=True,
             num_observations=len(observations),
