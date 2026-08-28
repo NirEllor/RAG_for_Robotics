@@ -11,12 +11,30 @@
 | 7 | Robustness and adaptation | Not implemented yet | Test viewpoint changes, partial occlusion, and lightweight adaptation | Retrieval remains useful under perturbations |
 | 8 | Stretch goals | Not implemented yet | Explore flow matching or more advanced planners | Only after the earlier steps are stable and reproducible |
 
+## Recommended Near-Term Task Subset
+
+For the current time budget, focus the main experiments on a smaller subset of tasks that gives
+good diversity without creating too much debugging overhead. Recommended subset:
+
+1. `reach_target` - saved-demo anchor task and smoke-test baseline.
+2. `open_drawer` - simple articulated object interaction.
+3. `slide_block_to_color_target` - important for color-aware retrieval.
+4. `close_jar` - precision grasping and closure geometry.
+5. `insert_onto_square_peg` - tight pose/alignment task.
+6. `stack_blocks` - classic stacking geometry.
+7. `place_shape_in_shape_sorter` - shape/category discrimination.
+8. `light_bulb_in` - fine manipulation with a compact target region.
+
+Keep the remaining RLBench tasks in the full config as future expansion candidates. They are
+useful later for scaling and robustness, but they should not block the near-term MVP.
+
 ## Immediate Priority
 
 Right now the most important order is:
 
 1. finish ingesting the RLBench raw mirror,
 2. rebuild the multi-task dataset,
-3. run evaluation again with the existing baselines,
-4. then improve the retrieval representation to handle color more explicitly.
-
+3. rebuild the dataset first on the recommended subset above,
+4. run evaluation again with the existing baselines,
+5. then improve the retrieval representation to handle color more explicitly,
+6. later expand back to the full 19-task set once the MVP is stable.
