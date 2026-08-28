@@ -20,4 +20,4 @@ TASK_END_FLAG=""
 sbatch $CPU_NODE_ARGS --mem=20G -c4 --time=12:00:00 \
   --mail-type=END,FAIL --mail-user="$EMAIL" \
   --job-name="build_ds" \
-  --wrap "bash -lc 'cd \"$PROJECT_ROOT\" && source \"$VENV_DIR/bin/activate\" && export PIP_CACHE_DIR=\"$PIP_CACHE_DIR\" HF_HOME=\"$HF_HOME\" TORCH_HOME=\"$TORCH_HOME\" && python3 scripts/build_multitask_dataset.py --config \"$CONFIG_PATH\" --dataset-root \"$OUTPUT_DATASET_ROOT\" --overwrite $RESUME_FLAG $TASK_START_FLAG $TASK_END_FLAG'"
+  --wrap "bash -lc 'cd \"$PROJECT_ROOT\" && source \"$VENV_DIR/bin/activate\" && export PIP_CACHE_DIR=\"$PIP_CACHE_DIR\" HF_HOME=\"$HF_HOME\" TORCH_HOME=\"$TORCH_HOME\" && $COPPELIASIM_ENV python3 scripts/build_multitask_dataset.py --config \"$CONFIG_PATH\" --dataset-root \"$OUTPUT_DATASET_ROOT\" --overwrite $RESUME_FLAG $TASK_START_FLAG $TASK_END_FLAG'"
