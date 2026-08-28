@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from omegaconf import OmegaConf
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -42,6 +43,23 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Allow replacing an existing dataset root.",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Append to an existing dataset root instead of replacing it.",
+    )
+    parser.add_argument(
+        "--task-start-index",
+        type=int,
+        default=1,
+        help="1-based index of the first configured task to process.",
+    )
+    parser.add_argument(
+        "--task-end-index",
+        type=int,
+        default=None,
+        help="1-based inclusive index of the last configured task to process.",
+    )
     return parser.parse_args()
 
 
@@ -74,18 +92,34 @@ def main() -> int:
     if not task_specs:
         raise ValueError("Config must define at least one task under `tasks`.")
 
+    start_index = max(1, int(args.task_start_index))
+    end_index = int(args.task_end_index) if args.task_end_index is not None else len(task_specs)
+    if end_index < start_index:
+        raise ValueError("--task-end-index must be >= --task-start-index")
+    task_specs = task_specs[start_index - 1 : end_index]
+
     _log("=" * 80)
     _log("Phase 2: Multitask dataset export")
     _log("=" * 80)
     _log(f"Config: {args.config}")
     _log(f"Dataset root: {dataset_root}")
     _log(f"Split seed: {split_seed}")
-    _log(f"Tasks configured: {len(task_specs)}")
+    _log(f"Tasks configured: {len(task_specs)} (requested range: {start_index}-{end_index})")
 
-    specs: list[RLBenchDemoSpec] = []
     summary_rows: list[tuple[str, int, int]] = []
+    existing_task_names: set[str] = set()
+    manifest_path = dataset_root / "manifest.parquet"
+    if args.resume and manifest_path.exists():
+        try:
+            existing_task_names = {
+                str(value) for value in pd.read_parquet(manifest_path)["task_name"].unique()
+            }
+            _log(f"Existing tasks in manifest: {sorted(existing_task_names)}")
+        except Exception as exc:
+            _log(f"WARNING: Could not read existing manifest for resume: {exc}")
+            existing_task_names = set()
 
-    for task_index, task_cfg in enumerate(task_specs, start=1):
+    for task_index, task_cfg in enumerate(task_specs, start=start_index):
         task_name = str(_task_cfg_value(task_cfg, "task_name"))
         requested = int(_task_cfg_value(task_cfg, "num_episodes", 0))
         variation_id = int(_task_cfg_value(task_cfg, "variation_id", 0))
@@ -106,6 +140,11 @@ def main() -> int:
             _log(f"  source_roots: {[str(root) for root in source_roots]}")
         else:
             _log("  source_roots: <default search roots>")
+
+        if task_name in existing_task_names:
+            _log(f"  already_exported: skipping {task_name}")
+            summary_rows.append((task_name, requested, 0))
+            continue
 
         try:
             if source_layout == "peract_raw":
@@ -140,50 +179,46 @@ def main() -> int:
             summary_rows.append((task_name, requested, 0))
             continue
 
-        for index, demo in enumerate(demos):
-            specs.append(
-                RLBenchDemoSpec(
-                    task_name=task_name,
-                    demo=demo,
-                    source_kind=source_kind,
-                    source_root=str(resolved_source_root),
-                    source_episode_directory=(
-                        source_episode_dirs[index] if index < len(source_episode_dirs) else None
-                    ),
-                    variation_id=variation_id,
-                )
-            )
-        summary_rows.append((task_name, requested, len(demos)))
         _log(f"  queued_for_export: {len(demos)}")
 
-    _log(f"Collected specs: {len(specs)}")
+        specs = [
+            RLBenchDemoSpec(
+                task_name=task_name,
+                demo=demo,
+                source_kind=source_kind,
+                source_root=str(resolved_source_root),
+                source_episode_directory=(
+                    source_episode_dirs[index] if index < len(source_episode_dirs) else None
+                ),
+                variation_id=variation_id,
+            )
+            for index, demo in enumerate(demos)
+        ]
 
-    if not specs:
-        raise RuntimeError("No demos were collected from the configured tasks.")
-
-    _log("Starting export to disk...")
-    result = export_rlbench_dataset_from_specs(
-        dataset_root=dataset_root,
-        specs=specs,
-        split_seed=split_seed,
-        overwrite=args.overwrite,
-        snapshot_policy=str(cfg.snapshot_policy),
-        target_crop_enabled=bool(cfg.point_cloud.target_crop),
-        target_crop_size=int(cfg.point_cloud.crop_size),
-        target_crop_margin=float(cfg.point_cloud.crop_margin),
-        xyz_only=bool(cfg.point_cloud.xyz_only),
-        generator=generator,
-        dataset_task_name=dataset_task_name,
-    )
+        _log("  exporting task batch...")
+        result = export_rlbench_dataset_from_specs(
+            dataset_root=dataset_root,
+            specs=specs,
+            split_seed=split_seed,
+            overwrite=args.overwrite and task_index == start_index and not args.resume,
+            resume=args.resume or task_index != start_index or manifest_path.exists(),
+            snapshot_policy=str(cfg.snapshot_policy),
+            target_crop_enabled=bool(cfg.point_cloud.target_crop),
+            target_crop_size=int(cfg.point_cloud.crop_size),
+            target_crop_margin=float(cfg.point_cloud.crop_margin),
+            xyz_only=bool(cfg.point_cloud.xyz_only),
+            generator=generator,
+            dataset_task_name=dataset_task_name,
+        )
+        existing_task_names.add(task_name)
+        summary_rows.append((task_name, requested, len(demos)))
+        _log(f"  exported_batch_total_episodes: {result.num_exported_episodes}")
 
     _log("=" * 80)
     _log("Phase 2: Multitask dataset export complete")
     _log("=" * 80)
-    _log(f"Dataset root: {result.dataset_root}")
-    _log(f"Manifest: {result.manifest_path}")
-    _log(f"Metadata: {result.metadata_path}")
-    _log(f"Splits: {result.split_path}")
-    _log(f"Episodes exported: {result.num_exported_episodes}")
+    _log(f"Dataset root: {dataset_root}")
+    _log(f"Processed task range: {start_index}-{end_index}")
     for task_name, requested, exported in summary_rows:
         _log(f"  {task_name}: requested={requested}, exported={exported}")
     return 0

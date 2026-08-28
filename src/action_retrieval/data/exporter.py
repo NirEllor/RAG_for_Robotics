@@ -184,11 +184,40 @@ def _normalize_episode_directories(values: Sequence[Path | str | None] | None) -
     return normalized
 
 
+def _load_existing_manifest_rows(manifest_path: Path) -> list[dict[str, Any]]:
+    if not manifest_path.exists():
+        return []
+    return pd.read_parquet(manifest_path).to_dict(orient="records")
+
+
+def _load_existing_split(split_path: Path) -> dict[str, list[str]]:
+    if not split_path.exists():
+        return {"train": [], "val": [], "test": []}
+    with split_path.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    splits = payload.get("splits", payload)
+    return {
+        "train": list(splits.get("train", [])),
+        "val": list(splits.get("val", [])),
+        "test": list(splits.get("test", [])),
+    }
+
+
+def _next_episode_index(existing_rows: Sequence[dict[str, Any]]) -> int:
+    indices = []
+    for row in existing_rows:
+        episode_id = str(row.get("episode_id", ""))
+        if episode_id.startswith("episode") and episode_id[len("episode") :].isdigit():
+            indices.append(int(episode_id[len("episode") :]))
+    return max(indices, default=-1) + 1
+
+
 def export_rlbench_dataset_from_specs(
     dataset_root: Path,
     specs: Sequence[RLBenchDemoSpec],
     split_seed: int,
     overwrite: bool = False,
+    resume: bool = False,
     snapshot_policy: str = "initial",
     target_crop_enabled: bool = True,
     target_crop_size: int | None = 256,
@@ -202,11 +231,14 @@ def export_rlbench_dataset_from_specs(
 
     dataset_root = Path(dataset_root)
     if dataset_root.exists():
-        if not overwrite:
-            raise FileExistsError(f"Dataset root already exists: {dataset_root}")
-        import shutil
+        if resume:
+            pass
+        elif overwrite:
+            import shutil
 
-        shutil.rmtree(dataset_root)
+            shutil.rmtree(dataset_root)
+        else:
+            raise FileExistsError(f"Dataset root already exists: {dataset_root}")
     dataset_root.mkdir(parents=True, exist_ok=True)
 
     spec_list = list(specs)
@@ -214,12 +246,18 @@ def export_rlbench_dataset_from_specs(
         raise ValueError("At least one demo spec is required to export a dataset.")
 
     env_info = collect_environment_info(_project_root())
+    manifest_path = dataset_root / "manifest.parquet"
+    split_path = dataset_root / "splits" / f"split_seed_{split_seed}.json"
+    existing_rows = _load_existing_manifest_rows(manifest_path) if resume else []
+    existing_split = _load_existing_split(split_path) if resume else {"train": [], "val": [], "test": []}
+    next_episode_index = _next_episode_index(existing_rows)
+
     episode_records: list[EpisodeRecord] = []
     pending_metadata: list[tuple[Path, dict[str, Any], str]] = []
-    episode_ids: list[str] = []
+    episode_ids: list[str] = [str(row["episode_id"]) for row in existing_rows]
 
-    for index, spec in enumerate(spec_list):
-        episode_id = f"episode{index}"
+    for offset, spec in enumerate(spec_list):
+        episode_id = f"episode{next_episode_index + offset}"
         episode_ids.append(episode_id)
         task_name = spec.task_name
         episode_dir = dataset_root / "episodes" / task_name / episode_id
@@ -366,7 +404,13 @@ def export_rlbench_dataset_from_specs(
         pending_metadata.append((metadata_path, metadata_payload, episode_id))
         episode_records.append(record)
 
-    split = _build_split(episode_ids, split_seed)
+    split = _build_split([record.episode_id for record in episode_records], split_seed)
+    if existing_rows:
+        split = {
+            "train": list(existing_split.get("train", [])) + list(split.get("train", [])),
+            "val": list(existing_split.get("val", [])) + list(split.get("val", [])),
+            "test": list(existing_split.get("test", [])) + list(split.get("test", [])),
+        }
     final_records: list[EpisodeRecord] = []
     for episode_record in episode_records:
         split_name = next(
@@ -384,9 +428,8 @@ def export_rlbench_dataset_from_specs(
         finalized_record = replace(record, metadata_sha256=_sha256_file(metadata_path))
         finalized_records.append(finalized_record)
 
-    manifest_rows = [record.to_dict() for record in finalized_records]
+    manifest_rows = existing_rows + [record.to_dict() for record in finalized_records]
     manifest_df = pd.DataFrame(manifest_rows)
-    manifest_path = dataset_root / "manifest.parquet"
     manifest_df.to_parquet(manifest_path, index=False)
 
     unique_task_names = sorted({row["task_name"] for row in manifest_rows})
@@ -440,7 +483,6 @@ def export_rlbench_dataset_from_specs(
     metadata_path = dataset_root / "dataset_metadata.json"
     _write_json(metadata_path, metadata.to_dict())
 
-    split_path = dataset_root / "splits" / f"split_seed_{split_seed}.json"
     _write_json(
         split_path,
         {
@@ -457,7 +499,7 @@ def export_rlbench_dataset_from_specs(
         manifest_path=str(manifest_path),
         split_path=str(split_path),
         num_exported_episodes=len(finalized_records),
-        exported_episode_ids=tuple(episode_ids),
+        exported_episode_ids=tuple(record.episode_id for record in finalized_records),
     )
 
 
