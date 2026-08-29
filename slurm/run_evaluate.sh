@@ -11,7 +11,7 @@ source "$SCRIPT_DIR/config.sh"
 
 DATASET_ROOT="${DATASET_ROOT_OVERRIDE:-$DATA_ROOT/processed/v2_multitask}"
 ANNOTATIONS="${ANNOTATIONS_OVERRIDE:-$PROJECT_ROOT/configs/evaluation/rlbench_reach_target_hand_labels.json}"
-METHODS="${METHODS_OVERRIDE:-random pose_descriptor rgb_histogram global_color geometry_only}"
+METHODS="${METHODS_OVERRIDE:-random pose_descriptor rgb_histogram global_color geometry_only uni3d ptv3}"
 KS="${KS_OVERRIDE:-1 2 3}"
 EVAL_MEM_GB="${EVAL_MEM_GB:-32G}"
 

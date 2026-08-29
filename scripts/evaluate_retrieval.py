@@ -36,7 +36,15 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--methods",
         nargs="+",
-        default=["random", "pose_descriptor", "rgb_histogram", "global_color", "geometry_only"],
+        default=[
+            "random",
+            "pose_descriptor",
+            "rgb_histogram",
+            "global_color",
+            "geometry_only",
+            "uni3d",
+            "ptv3",
+        ],
         help="Retrieval methods/encoders to evaluate.",
     )
     parser.add_argument(

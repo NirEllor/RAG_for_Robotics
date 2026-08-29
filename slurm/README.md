@@ -73,4 +73,5 @@ The current codebase already has a retrieval interface that can be extended with
 `uni3d` and `ptv3` selectors. The `slurm/run_future_3d_encoder.sh` script is a
 cluster launcher for those backends; it can be used now with the CPU-friendly
 proxy encoders and later swapped to real checkpoints without changing the job
-shape.
+shape. The main evaluation helper also includes `uni3d` and `ptv3` in its
+default method list.
