@@ -77,9 +77,16 @@ git clone --depth 1 https://github.com/erikwijmans/Pointnet2_PyTorch.git "$WORK_
 
 python3 - <<PY
 from pathlib import Path
+import re
 
 setup_path = Path("$WORK_DIR/Pointnet2_PyTorch/pointnet2_ops_lib/setup.py")
 text = setup_path.read_text()
+text = re.sub(
+    r'^\s*os\.environ\["TORCH_CUDA_ARCH_LIST"\]\s*=\s*".*?"\s*$\n?',
+    "",
+    text,
+    flags=re.MULTILINE,
+)
 text = text.replace("compute_37", "")
 text = text.replace("sm_37", "")
 setup_path.write_text(text)
