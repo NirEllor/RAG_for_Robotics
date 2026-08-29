@@ -49,6 +49,10 @@ export MAX_JOBS="${MAX_JOBS:-1}"
 export CFLAGS="${CFLAGS:--O0 -g0}"
 export CXXFLAGS="${CXXFLAGS:--O0 -g0}"
 export FORCE_CUDA="${FORCE_CUDA:-1}"
+export TMPDIR="$TMP_ROOT"
+export TMP="$TMP_ROOT"
+export TEMP="$TMP_ROOT"
+export TORCH_EXTENSIONS_DIR="$TORCH_EXTENSIONS_DIR"
 
 if [ -z "${TORCH_CUDA_ARCH_LIST:-}" ]; then
   TORCH_CUDA_ARCH_LIST="$(python3 - <<'PY'
