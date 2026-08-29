@@ -22,8 +22,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/config.sh"
+PROJECT_ROOT="/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics"
+source "$PROJECT_ROOT/slurm/config.sh"
 
 cd "$PROJECT_ROOT"
 source "$VENV_DIR/bin/activate"
