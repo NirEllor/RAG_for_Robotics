@@ -62,7 +62,7 @@ The goal is to answer three questions quickly:
 | `GeometryOnlyEncoder` | `geometry_only` | 3D geometry + robot kinematics, no RGB | Baseline geometry encoder |
 | `RandomEpisodeEncoder` | `random` | Deterministic seeded random projection | Sanity-check baseline |
 | `Uni3DEncoder` | `uni3d` | Official Uni3D checkpoint when configured, proxy fallback otherwise | Real checkpoint loads when `UNI3D_REPO_ROOT` and `UNI3D_CHECKPOINT` are set |
-| `PointTransformerV3Encoder` | `ptv3` | Point-cloud proxy for a point transformer backbone | Cluster-ready proxy today, real checkpoint later |
+| `PointTransformerV3Encoder` | `ptv3` | Official PTv3 checkpoint when configured, proxy fallback otherwise | Real checkpoint loads when `PTV3_REPO_ROOT` and `PTV3_CHECKPOINT` are set |
 
 ## 4. Evaluation APIs
 

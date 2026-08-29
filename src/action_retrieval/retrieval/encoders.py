@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import os
 import sys
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -321,6 +322,51 @@ def _env_float(name: str, default: float) -> float:
     if value is None or not value.strip():
         return default
     return float(value)
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int_tuple(name: str, default: tuple[int, ...]) -> tuple[int, ...]:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    parts = [part.strip() for part in value.split(",") if part.strip()]
+    if len(parts) == 1:
+        return tuple([int(parts[0])] * len(default))
+    if len(parts) != len(default):
+        raise ValueError(
+            f"{name} must contain either 1 value or {len(default)} comma-separated values."
+        )
+    return tuple(int(part) for part in parts)
+
+
+def _ensure_package_module(package_name: str, package_path: Path) -> ModuleType:
+    module = sys.modules.get(package_name)
+    if module is not None:
+        return module  # type: ignore[return-value]
+    module = ModuleType(package_name)
+    module.__path__ = [str(package_path)]  # type: ignore[attr-defined]
+    sys.modules[package_name] = module
+    return module
+
+
+def _load_module_from_path(module_name: str, module_path: Path, package_path: Path) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        str(module_path),
+        submodule_search_locations=[str(package_path)],
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not create import spec for {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 @dataclass(frozen=True)
@@ -791,20 +837,228 @@ class Uni3DEncoder:
 
 
 class PointTransformerV3Encoder:
-    """CPU-friendly Point Transformer V3-style 3D foundation encoder proxy.
+    """Point Transformer V3-style 3D foundation encoder with real-backend fallback.
 
-    The point-cloud tokenization mirrors a learned point transformer interface:
-    a deterministic 3D backbone that can later be replaced with an actual PTv3
-    checkpoint while keeping the retrieval API unchanged.
+    If ``PTV3_REPO_ROOT`` and ``PTV3_CHECKPOINT`` are set, this encoder loads
+    the official PTv3 code from the cloned repository and runs a pretrained
+    checkpoint. Otherwise it falls back to the deterministic proxy path that
+    keeps the retrieval MVP usable.
     """
 
     name = "ptv3"
 
-    def __init__(self, *, sample_count: int = 128, output_dim: int = 768, **_: Any):
+    def __init__(
+        self,
+        *,
+        sample_count: int = 10000,
+        output_dim: int = 768,
+        repo_root: str | os.PathLike[str] | None = None,
+        checkpoint: str | os.PathLike[str] | None = None,
+        in_channels: int | None = None,
+        grid_size: float | None = None,
+        enable_flash: bool | None = None,
+        enable_rpe: bool | None = None,
+        cls_mode: bool | None = None,
+        order: str | None = None,
+        stride: str | None = None,
+        enc_depths: str | None = None,
+        enc_channels: str | None = None,
+        enc_num_head: str | None = None,
+        enc_patch_size: str | None = None,
+        dec_depths: str | None = None,
+        dec_channels: str | None = None,
+        dec_num_head: str | None = None,
+        dec_patch_size: str | None = None,
+        drop_path: float | None = None,
+        upcast_attention: bool | None = None,
+        upcast_softmax: bool | None = None,
+        device: str | None = None,
+        use_real: bool | None = None,
+        **_: Any,
+    ):
         self.sample_count = sample_count
         self.output_dim = output_dim
+        self.repo_root = _coerce_optional_path(repo_root or os.getenv("PTV3_REPO_ROOT"))
+        self.checkpoint = _coerce_optional_path(checkpoint or os.getenv("PTV3_CHECKPOINT"))
+        self.in_channels = in_channels if in_channels is not None else _env_int("PTV3_IN_CHANNELS", 6)
+        self.grid_size = grid_size if grid_size is not None else float(os.getenv("PTV3_GRID_SIZE", "0.01"))
+        self.enable_flash = enable_flash if enable_flash is not None else _env_bool("PTV3_ENABLE_FLASH", False)
+        self.enable_rpe = enable_rpe if enable_rpe is not None else _env_bool("PTV3_ENABLE_RPE", False)
+        self.cls_mode = cls_mode if cls_mode is not None else _env_bool("PTV3_CLS_MODE", False)
+        self.order = tuple((order or os.getenv("PTV3_ORDER", "z,z-trans,hilbert,hilbert-trans")).split(","))
+        self.stride = _env_int_tuple("PTV3_STRIDE", (2, 2, 2, 2)) if stride is None else tuple(int(v) for v in stride.split(","))
+        self.enc_depths = (
+            _env_int_tuple("PTV3_ENC_DEPTHS", (2, 2, 2, 6, 2))
+            if enc_depths is None
+            else tuple(int(v) for v in enc_depths.split(","))
+        )
+        self.enc_channels = (
+            _env_int_tuple("PTV3_ENC_CHANNELS", (32, 64, 128, 256, 512))
+            if enc_channels is None
+            else tuple(int(v) for v in enc_channels.split(","))
+        )
+        self.enc_num_head = (
+            _env_int_tuple("PTV3_ENC_NUM_HEAD", (2, 4, 8, 16, 32))
+            if enc_num_head is None
+            else tuple(int(v) for v in enc_num_head.split(","))
+        )
+        self.enc_patch_size = (
+            _env_int_tuple("PTV3_ENC_PATCH_SIZE", (128, 128, 128, 128, 128))
+            if enc_patch_size is None
+            else tuple(int(v) for v in enc_patch_size.split(","))
+        )
+        self.dec_depths = (
+            _env_int_tuple("PTV3_DEC_DEPTHS", (2, 2, 2, 2))
+            if dec_depths is None
+            else tuple(int(v) for v in dec_depths.split(","))
+        )
+        self.dec_channels = (
+            _env_int_tuple("PTV3_DEC_CHANNELS", (64, 64, 128, 256))
+            if dec_channels is None
+            else tuple(int(v) for v in dec_channels.split(","))
+        )
+        self.dec_num_head = (
+            _env_int_tuple("PTV3_DEC_NUM_HEAD", (4, 4, 8, 16))
+            if dec_num_head is None
+            else tuple(int(v) for v in dec_num_head.split(","))
+        )
+        self.dec_patch_size = (
+            _env_int_tuple("PTV3_DEC_PATCH_SIZE", (128, 128, 128, 128))
+            if dec_patch_size is None
+            else tuple(int(v) for v in dec_patch_size.split(","))
+        )
+        self.drop_path = drop_path if drop_path is not None else _env_float("PTV3_DROP_PATH", 0.3)
+        self.upcast_attention = (
+            upcast_attention if upcast_attention is not None else _env_bool("PTV3_UPCAST_ATTENTION", False)
+        )
+        self.upcast_softmax = (
+            upcast_softmax if upcast_softmax is not None else _env_bool("PTV3_UPCAST_SOFTMAX", False)
+        )
+        self.device = torch.device(device or os.getenv("PTV3_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu"))
+        env_use_real = os.getenv("PTV3_USE_REAL")
+        if use_real is not None:
+            self.use_real = use_real
+        elif env_use_real is not None and env_use_real.strip():
+            self.use_real = env_use_real.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            self.use_real = self.repo_root is not None and self.checkpoint is not None
+        self._real_model: Any | None = None
+        self._real_backend_attempted = False
+        self._real_backend_failed = False
+
+    def _build_real_backend(self) -> Any:
+        if self.repo_root is None or self.checkpoint is None:
+            raise FileNotFoundError(
+                "Set both PTV3_REPO_ROOT and PTV3_CHECKPOINT to enable the real PTv3 backend."
+            )
+        if not self.repo_root.exists():
+            raise FileNotFoundError(f"PTv3 repo root does not exist: {self.repo_root}")
+        if not self.checkpoint.exists():
+            raise FileNotFoundError(f"PTv3 checkpoint does not exist: {self.checkpoint}")
+
+        package_name = "_ptv3_runtime"
+        _ensure_package_module(package_name, self.repo_root)
+
+        model_module_path = self.repo_root / "model.py"
+        if not model_module_path.exists():
+            raise FileNotFoundError(f"Could not find PTv3 model.py at: {model_module_path}")
+
+        module_name = f"{package_name}.model"
+        module = _load_module_from_path(module_name, model_module_path, self.repo_root)
+        try:
+            PointTransformerV3 = getattr(module, "PointTransformerV3")
+        except AttributeError as exc:
+            raise ImportError(
+                f"PTv3 model module at {model_module_path} does not expose PointTransformerV3"
+            ) from exc
+
+        model = PointTransformerV3(
+            in_channels=self.in_channels,
+            order=self.order,
+            stride=self.stride,
+            enc_depths=self.enc_depths,
+            enc_channels=self.enc_channels,
+            enc_num_head=self.enc_num_head,
+            enc_patch_size=self.enc_patch_size,
+            dec_depths=self.dec_depths,
+            dec_channels=self.dec_channels,
+            dec_num_head=self.dec_num_head,
+            dec_patch_size=self.dec_patch_size,
+            drop_path=self.drop_path,
+            enable_rpe=self.enable_rpe,
+            enable_flash=self.enable_flash,
+            upcast_attention=self.upcast_attention,
+            upcast_softmax=self.upcast_softmax,
+            cls_mode=self.cls_mode,
+        )
+
+        checkpoint = torch.load(self.checkpoint, map_location="cpu")
+        state_dict = _extract_checkpoint_state_dict(checkpoint)
+        load_result = model.load_state_dict(state_dict, strict=False)
+        missing_keys = getattr(load_result, "missing_keys", [])
+        unexpected_keys = getattr(load_result, "unexpected_keys", [])
+        if missing_keys or unexpected_keys:
+            warnings.warn(
+                "Loaded PTv3 checkpoint with a non-empty key mismatch. "
+                f"missing={len(missing_keys)}, unexpected={len(unexpected_keys)}. "
+                "The real backend is active, but you should verify the checkpoint matches the code."
+            )
+        model.eval()
+        model.to(self.device)
+        return model
+
+    def _get_real_backend(self) -> Any | None:
+        if self._real_backend_failed:
+            return None
+        if self._real_model is not None:
+            return self._real_model
+        if self._real_backend_attempted:
+            return None
+        self._real_backend_attempted = True
+        try:
+            self._real_model = self._build_real_backend()
+        except Exception as exc:
+            self._real_backend_failed = True
+            warnings.warn(
+                "PTv3 real backend is unavailable, so the proxy encoder will be used instead. "
+                f"Reason: {exc}"
+            )
+            self._real_model = None
+        return self._real_model
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        if self.use_real:
+            model = self._get_real_backend()
+            if model is not None:
+                xyzrgb = _primary_xyzrgb_points(episode)
+                if xyzrgb is not None:
+                    sampled = _sample_xyzrgb_points(xyzrgb, self.sample_count)
+                    coord = torch.from_numpy(sampled[:, :3].astype(np.float32)).to(self.device)
+                    feat = torch.from_numpy(sampled.astype(np.float32)).to(self.device)
+                    batch = torch.zeros((sampled.shape[0],), dtype=torch.long, device=self.device)
+                    data_dict = {
+                        "coord": coord,
+                        "feat": feat,
+                        "batch": batch,
+                        "grid_size": self.grid_size,
+                    }
+                    with torch.inference_mode():
+                        output = model(data_dict)
+
+                    if isinstance(output, dict):
+                        feat_tensor = output.get("feat")
+                    else:
+                        feat_tensor = getattr(output, "feat", output)
+
+                    if isinstance(feat_tensor, torch.Tensor):
+                        if feat_tensor.ndim == 2:
+                            vector = feat_tensor.mean(dim=0)
+                        else:
+                            vector = feat_tensor.reshape(-1)
+                        vector_np = vector.detach().float().cpu().numpy().reshape(-1)
+                        if vector_np.size > 0:
+                            return _normalize(vector_np)
+
         vector = _build_point_cloud_backbone_embedding(
             episode,
             variant="ptv3",

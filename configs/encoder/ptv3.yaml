@@ -1,11 +1,16 @@
 name: ptv3
 type: 3d_foundation
-status: READY_FOR_MVP_PROXY
+status: REAL_BACKEND_READY
 
 # Point Transformer V3-style backbone.
-# The repository currently ships a deterministic, CPU-friendly proxy encoder
-# that preserves the retrieval interface. It can be swapped for a real PTv3
-# checkpoint/loader on the cluster without changing downstream code.
+# The retrieval pipeline now supports two modes:
+#   1. real PTv3 loading when PTV3_REPO_ROOT + PTV3_CHECKPOINT are set
+#   2. deterministic proxy fallback when the real backend is unavailable
+#
+# To enable the real model on the cluster, point PTV3_REPO_ROOT at a cloned
+# copy of the official PointTransformerV3 repository and PTV3_CHECKPOINT at
+# the model checkpoint file. The loader will then use the official
+# PointTransformerV3 class defined in model.py.
 
 model_size: small
 checkpoint: null
@@ -13,4 +18,4 @@ pretrained: true
 frozen: true
 output_dim: 768
 
-note: "Use the retrieval pipeline's ptv3 encoder path; replace with a real PTv3 checkpoint later."
+note: "Use the retrieval pipeline's ptv3 encoder path; set env vars to activate the real PTv3 checkpoint."
