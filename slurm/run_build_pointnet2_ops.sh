@@ -70,7 +70,23 @@ echo "TORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST"
 
 python3 -c "import torch; print('torch.cuda=', torch.version.cuda)"
 
+WORK_DIR="$(mktemp -d /tmp/pointnet2_ops_build.XXXXXX)"
+trap 'rm -rf "$WORK_DIR"' EXIT
+
+git clone --depth 1 https://github.com/erikwijmans/Pointnet2_PyTorch.git "$WORK_DIR/Pointnet2_PyTorch"
+
+python3 - <<PY
+from pathlib import Path
+
+setup_path = Path("$WORK_DIR/Pointnet2_PyTorch/pointnet2_ops_lib/setup.py")
+text = setup_path.read_text()
+text = text.replace("compute_37", "")
+text = text.replace("sm_37", "")
+setup_path.write_text(text)
+print(f"patched {setup_path}")
+PY
+
 python3 -m pip install --no-build-isolation --no-cache-dir \
-  "git+https://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+  "$WORK_DIR/Pointnet2_PyTorch/pointnet2_ops_lib"
 
 python3 -c "import pointnet2_ops; print('pointnet2_ops OK')"
