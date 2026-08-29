@@ -51,7 +51,22 @@ export CUDA_HOME="$CUDA_ROOT"
 export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 export MAX_JOBS="${MAX_JOBS:-1}"
-export TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-8.0;8.6;9.0}"
+
+if [ -z "${TORCH_CUDA_ARCH_LIST:-}" ]; then
+  TORCH_CUDA_ARCH_LIST="$(python3 - <<'PY'
+import torch
+
+if torch.cuda.is_available():
+    major, minor = torch.cuda.get_device_capability(0)
+    print(f"{major}.{minor}")
+else:
+    print("8.0")
+PY
+)"
+fi
+export TORCH_CUDA_ARCH_LIST
+
+echo "TORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST"
 
 python3 -c "import torch; print('torch.cuda=', torch.version.cuda)"
 
