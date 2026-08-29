@@ -85,3 +85,15 @@ If you want the real pretrained backbones, use the download helpers first:
 
 Both jobs expect `HF_TOKEN` to be exported before submission and will store
 weights under cluster-local checkpoint directories.
+
+## Building pointnet2_ops for Uni3D
+
+Uni3D's real backend depends on `pointnet2_ops`. If the pip build fails with a
+CUDA mismatch or the compiler gets killed, use:
+
+1. `./slurm/run_build_pointnet2_ops.sh`
+
+The job loads `cuda/12.9`, caps parallel compilation with `MAX_JOBS=1`, and
+sets `TORCH_CUDA_ARCH_LIST` to a conservative default that works well on the
+cluster. Once this job succeeds, Uni3D should stop falling back to the proxy
+backend.
