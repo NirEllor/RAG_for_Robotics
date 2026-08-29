@@ -97,3 +97,13 @@ The job loads `cuda/12.9`, caps parallel compilation with `MAX_JOBS=1`, and
 sets `TORCH_CUDA_ARCH_LIST` to a conservative default that works well on the
 cluster. Once this job succeeds, Uni3D should stop falling back to the proxy
 backend.
+
+## Building PTv3 PyG dependencies
+
+If PTv3 import fails because `torch_scatter`, `torch_sparse`, or
+`torch_cluster` are missing, use:
+
+1. `./slurm/run_install_ptv3_deps.sh`
+
+The job uses a GPU node, forces serial compilation, and lowers compiler
+optimization to reduce peak memory during source builds.
