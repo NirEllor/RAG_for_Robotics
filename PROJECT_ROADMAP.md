@@ -16,7 +16,7 @@ We are currently here:
 
 1. the CLUSTER has finished building the 8-task RLBench subset dataset;
 2. task-level relevance annotations for subset-8 have been generated;
-3. subset-8 retrieval evaluation has been submitted and is currently running;
+3. subset-8 retrieval evaluation has completed successfully;
 4. `reach_target` was already exported and validated as the smoke benchmark;
 5. `Uni3D` / `Point Transformer V3` still need to be made truly usable in the MVP, not left as placeholders.
 
@@ -26,7 +26,7 @@ We are currently here:
 | --- | --- | --- | --- | --- |
 | DONE | 1 | Finish the 8-task dataset build | Let the SLURM build complete, validate the manifest, and keep the subset dataset root stable | `v2_multitask_subset8` exists, validates, and contains the 8 intended tasks |
 | DONE | 2 | Build evaluation labels for subset-8 | Generate task-level relevance annotations from the subset manifest | A JSON annotations file exists for all subset-8 episodes |
-| IN PROGRESS | 3 | Run clean retrieval evaluation on subset-8 | Evaluate `no retrieval`, `random`, `image`, `geometry`, and color-aware baselines on the same episodes/candidate sets | Results are reproducible and report Top-1 / Top-K side by side |
+| DONE | 3 | Run clean retrieval evaluation on subset-8 | Evaluate `no retrieval`, `random`, `image`, `geometry`, and color-aware baselines on the same episodes/candidate sets | Results are reproducible and report Top-1 / Top-K side by side |
 | NEXT | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks become distinguishable in retrieval |
 | NEXT | 5 | Integrate `Uni3D` and `PTv3` | Replace placeholder backbones with real cluster-ready learned 3D encoders | `uni3d` and `ptv3` run end-to-end through the same retrieval API |
 | NEXT | 6 | Re-run evaluation with learned 3D backbones | Compare learned 3D retrieval against image and hand-crafted baselines | We have fair, quantitative evidence for 3D geometric retrieval |
@@ -66,9 +66,8 @@ for eventual breadth, but they should not block the next 8 days.
 
 The active order is:
 
-1. monitor the running subset-8 evaluation job on the CLUSTER,
-2. inspect the resulting tables and figures once the job completes,
-3. wire in `Uni3D` and `PTv3`,
-4. repeat the evaluation with learned 3D embeddings,
-5. run the variation/robustness checks,
-6. freeze the final results by September 6, 2026.
+1. inspect the completed subset-8 evaluation tables and figures,
+2. wire in `Uni3D` and `PTv3`,
+3. repeat the evaluation with learned 3D embeddings,
+4. run the variation/robustness checks,
+5. freeze the final results by September 6, 2026.
