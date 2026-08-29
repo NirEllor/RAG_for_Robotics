@@ -17,18 +17,18 @@ TORCH_HOME="$CACHE_ROOT/torch"
 TMP_ROOT="$CACHE_ROOT/tmp"
 TORCH_EXTENSIONS_DIR="$CACHE_ROOT/torch_extensions"
 
-EMAIL="ellorwaizner.nir@mail.huji.ac.il"
+EMAIL="${EMAIL:-ellorwaizner.nir@mail.huji.ac.il}"
 
 # Default cluster settings; individual scripts can override them.
-CPU_NODE_ARGS=""
-GPU_NODE_ARGS="--gres=gpu:1"
+CPU_NODE_ARGS="${CPU_NODE_ARGS:-}"
+GPU_NODE_ARGS="${GPU_NODE_ARGS:---gres=gpu:1}"
 
 # Default data and outputs locations on the cluster.
-DATA_ROOT="$WORK_ROOT/RAG_for_Robotics_data"
-OUTPUT_ROOT="$WORK_ROOT/RAG_for_Robotics_outputs"
-RAW_DATA_ROOT="$PROJECT_ROOT/data/rlbench/raw"
-RAW_STAGE_DIR="$RAW_DATA_ROOT/_hf_stage"
-COPPELIASIM_ROOT="$WORK_ROOT/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04"
+DATA_ROOT="${DATA_ROOT:-$WORK_ROOT/RAG_for_Robotics_data}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$WORK_ROOT/RAG_for_Robotics_outputs}"
+RAW_DATA_ROOT="${RAW_DATA_ROOT:-$PROJECT_ROOT/data/rlbench/raw}"
+RAW_STAGE_DIR="${RAW_STAGE_DIR:-$RAW_DATA_ROOT/_hf_stage}"
+COPPELIASIM_ROOT="${COPPELIASIM_ROOT:-$WORK_ROOT/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04}"
 
 COPPELIASIM_ENV=""
 if [ -d "$COPPELIASIM_ROOT" ]; then
@@ -39,7 +39,7 @@ mkdir -p "$PIP_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" "$DATA_ROOT" "$OUTPUT_ROOT"
 mkdir -p "$TMP_ROOT" "$TORCH_EXTENSIONS_DIR"
 mkdir -p "$RAW_STAGE_DIR"
 
-PYTHON_BIN="$VENV_DIR/bin/python3"
+PYTHON_BIN="${PYTHON_BIN:-$VENV_DIR/bin/python3}"
 
 export PROJECT_ROOT VENV_DIR CACHE_ROOT PIP_CACHE_DIR HF_HOME TORCH_HOME
 export TMP_ROOT TORCH_EXTENSIONS_DIR
