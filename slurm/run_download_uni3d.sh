@@ -25,8 +25,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/config.sh"
+PROJECT_ROOT="/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics"
+source "$PROJECT_ROOT/slurm/config.sh"
 
 UNI3D_REPO_ID="${UNI3D_REPO_ID:-BAAI/Uni3D}"
 UNI3D_REPO_SUBPATH="${UNI3D_REPO_SUBPATH:-modelzoo/uni3d-g/model.pt}"
@@ -50,4 +50,3 @@ export TORCH_HOME="$TORCH_HOME"
 hf download "$UNI3D_REPO_ID" "$UNI3D_REPO_SUBPATH" \
   --local-dir "$UNI3D_CHECKPOINT_DIR" \
   --max-workers 1
-
