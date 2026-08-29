@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 import numpy as np
 
 from action_retrieval.retrieval.dataset import ExportedEpisode
@@ -164,6 +163,18 @@ def test_geometry_only_encoder_produces_unit_vector():
     assert np.isclose(np.linalg.norm(vector), 1.0)
 
 
-def test_build_encoder_reports_missing_uni3d_backend():
-    with pytest.raises(NotImplementedError, match="Uni3D is not wired"):
-        build_encoder("uni3d")
+def test_build_encoder_supports_uni3d_and_ptv3_backends():
+    episode = _make_episode("episode0", 0.0)
+
+    uni3d = build_encoder("uni3d")
+    ptv3 = build_encoder("ptv3")
+
+    uni3d_vector = uni3d.encode(episode)
+    ptv3_vector = ptv3.encode(episode)
+
+    assert uni3d_vector.ndim == 1
+    assert ptv3_vector.ndim == 1
+    assert np.isclose(np.linalg.norm(uni3d_vector), 1.0)
+    assert np.isclose(np.linalg.norm(ptv3_vector), 1.0)
+    assert uni3d_vector.shape == ptv3_vector.shape
+    assert not np.allclose(uni3d_vector, ptv3_vector)

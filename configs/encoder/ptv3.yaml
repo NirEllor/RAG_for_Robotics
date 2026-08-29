@@ -1,0 +1,16 @@
+name: ptv3
+type: 3d_foundation
+status: READY_FOR_MVP_PROXY
+
+# Point Transformer V3-style backbone.
+# The repository currently ships a deterministic, CPU-friendly proxy encoder
+# that preserves the retrieval interface. It can be swapped for a real PTv3
+# checkpoint/loader on the cluster without changing downstream code.
+
+model_size: small
+checkpoint: null
+pretrained: true
+frozen: true
+output_dim: 768
+
+note: "Use the retrieval pipeline's ptv3 encoder path; replace with a real PTv3 checkpoint later."

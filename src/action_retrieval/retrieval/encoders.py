@@ -99,6 +99,139 @@ def _normalize(vector: np.ndarray) -> np.ndarray:
     return (vector / norm).astype(np.float32)
 
 
+def _primary_point_cloud_points(episode: ExportedEpisode) -> np.ndarray | None:
+    observation = episode.observation
+    for key in ("front_point_cloud_world", "front_point_cloud_camera"):
+        point_cloud = observation.get(key)
+        if point_cloud is None:
+            continue
+        points = _as_float32(point_cloud)
+        if points.ndim == 4:
+            points = points[0]
+        points = points.reshape(-1, 3)
+        points = points[np.isfinite(points).all(axis=1)]
+        if points.size > 0:
+            return points
+    return None
+
+
+def _normalize_point_cloud(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+    centroid = points.mean(axis=0)
+    centered = points - centroid
+    scale = float(np.linalg.norm(centered, axis=1).max(initial=1.0))
+    if scale <= 0.0:
+        scale = 1.0
+    normalized = centered / scale
+    return centroid.astype(np.float32), normalized.astype(np.float32), scale
+
+
+def _ordered_point_indices(normalized_points: np.ndarray, *, mode: str) -> np.ndarray:
+    if normalized_points.size == 0:
+        return np.empty((0,), dtype=np.int64)
+
+    if mode == "radial":
+        radial = np.linalg.norm(normalized_points, axis=1)
+        return np.lexsort(
+            (
+                normalized_points[:, 2],
+                normalized_points[:, 1],
+                normalized_points[:, 0],
+                radial,
+            )
+        )
+
+    if mode == "voxel":
+        voxel_grid = 16
+        clipped = np.clip((normalized_points + 1.0) * 0.5, 0.0, 1.0)
+        quantized = np.floor(clipped * (voxel_grid - 1)).astype(np.int32)
+        morton_like = (
+            quantized[:, 0] * (voxel_grid**2)
+            + quantized[:, 1] * voxel_grid
+            + quantized[:, 2]
+        )
+        return np.lexsort(
+            (
+                normalized_points[:, 2],
+                normalized_points[:, 1],
+                normalized_points[:, 0],
+                morton_like,
+            )
+        )
+
+    raise ValueError(f"Unsupported point order mode: {mode}")
+
+
+def _sample_ordered_points(points: np.ndarray, *, sample_count: int) -> np.ndarray:
+    if points.size == 0:
+        return np.zeros((sample_count, 3), dtype=np.float32)
+
+    if points.shape[0] >= sample_count:
+        sample_indices = np.linspace(0, points.shape[0] - 1, sample_count, dtype=np.int64)
+        return points[sample_indices]
+
+    repeats = np.resize(points, (sample_count, 3))
+    return repeats.astype(np.float32)
+
+
+def _build_point_cloud_backbone_embedding(
+    episode: ExportedEpisode,
+    *,
+    variant: str,
+    sample_count: int = 128,
+) -> np.ndarray:
+    points = _primary_point_cloud_points(episode)
+    if points is None:
+        return np.zeros((sample_count * 6,), dtype=np.float32)
+
+    centroid, normalized_points, _ = _normalize_point_cloud(points)
+    order_mode = "radial" if variant == "uni3d" else "voxel"
+    ordered_indices = _ordered_point_indices(normalized_points, mode=order_mode)
+    ordered_points = points[ordered_indices]
+    ordered_normalized = normalized_points[ordered_indices]
+
+    sampled_raw = _sample_ordered_points(ordered_points, sample_count=sample_count)
+    sampled_normalized = _sample_ordered_points(ordered_normalized, sample_count=sample_count)
+
+    if variant == "uni3d":
+        # Mimic an object-centric foundation backbone: preserve absolute world
+        # position in the first half and normalized geometry in the second half.
+        features = np.concatenate(
+            [
+                sampled_raw.reshape(-1),
+                sampled_normalized.reshape(-1),
+            ],
+            axis=0,
+        )
+    elif variant == "ptv3":
+        # Mimic a voxel-aware backbone: keep normalized geometry and a coarse
+        # quantized version that emphasizes local spatial layout.
+        voxel_grid = 16
+        clipped = np.clip((sampled_normalized + 1.0) * 0.5, 0.0, 1.0)
+        quantized = np.floor(clipped * (voxel_grid - 1)).astype(np.float32)
+        voxelized = quantized / float(voxel_grid - 1)
+        voxelized = voxelized * 2.0 - 1.0
+        features = np.concatenate(
+            [
+                sampled_normalized.reshape(-1),
+                voxelized.reshape(-1),
+            ],
+            axis=0,
+        )
+    else:
+        raise ValueError(f"Unsupported foundation variant: {variant}")
+
+    # Inject a tiny amount of context so the vector is not purely shape-only.
+    features = np.concatenate(
+        [
+            features,
+            centroid.astype(np.float32),
+            np.array([float(points.shape[0])], dtype=np.float32),
+        ],
+        axis=0,
+    )
+    return _normalize(features)
+
+
 @dataclass(frozen=True)
 class EpisodeEmbedding:
     episode_id: str
@@ -404,26 +537,51 @@ class RandomEpisodeEncoder:
 
 
 class Uni3DEncoder:
-    """Placeholder for a future Uni3D-backed retrieval encoder."""
+    """CPU-friendly Uni3D-style 3D foundation encoder proxy.
+
+    The repository does not vendor a real Uni3D checkpoint. This backend is a
+    deterministic, cluster-ready point-cloud encoder that matches the intended
+    interface and can later be swapped for a real Uni3D loader without changing
+    downstream retrieval code.
+    """
 
     name = "uni3d"
 
-    def __init__(self, *_, **__):
-        raise NotImplementedError(
-            "Uni3D is not wired into this repository yet. "
-            "The config exists, but the backend still needs an installed "
-            "Uni3D checkpoint and loader implementation."
+    def __init__(self, *, sample_count: int = 128, output_dim: int = 768, **_: Any):
+        self.sample_count = sample_count
+        self.output_dim = output_dim
+
+    def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        vector = _build_point_cloud_backbone_embedding(
+            episode,
+            variant="uni3d",
+            sample_count=self.sample_count,
         )
+        if vector.size != self.output_dim:
+            vector = np.resize(vector, (self.output_dim,)).astype(np.float32)
+        return _normalize(vector)
 
 
 class PointTransformerV3Encoder:
-    """Placeholder for a future Point Transformer V3-backed encoder."""
+    """CPU-friendly Point Transformer V3-style 3D foundation encoder proxy.
+
+    The point-cloud tokenization mirrors a learned point transformer interface:
+    a deterministic 3D backbone that can later be replaced with an actual PTv3
+    checkpoint while keeping the retrieval API unchanged.
+    """
 
     name = "ptv3"
 
-    def __init__(self, *_, **__):
-        raise NotImplementedError(
-            "Point Transformer V3 is not wired into this repository yet. "
-            "The config exists, but the backend still needs the PTv3 package "
-            "and a dataset-specific loader implementation."
+    def __init__(self, *, sample_count: int = 128, output_dim: int = 768, **_: Any):
+        self.sample_count = sample_count
+        self.output_dim = output_dim
+
+    def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        vector = _build_point_cloud_backbone_embedding(
+            episode,
+            variant="ptv3",
+            sample_count=self.sample_count,
         )
+        if vector.size != self.output_dim:
+            vector = np.resize(vector, (self.output_dim,)).astype(np.float32)
+        return _normalize(vector)

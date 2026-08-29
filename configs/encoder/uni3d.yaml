@@ -1,17 +1,16 @@
 name: uni3d
 type: 3d_foundation
-status: OPTIONAL_NOT_YET_IMPLEMENTED
+status: READY_FOR_MVP_PROXY
 
-# Uni3D foundation model for 3D scene understanding.
-# Status: Optional; falls back to pose_descriptor + PCA-on-points if Uni3D
-# proves too heavy for CPU-only WSL2 (7.6GB RAM).
-# Implementation scheduled after Phase 2 MVP (exact cosine baseline with
-# random/pose/image encoders).
+# Uni3D-style foundation model for 3D scene understanding.
+# The repository currently ships a deterministic, CPU-friendly proxy encoder
+# that preserves the retrieval interface. It can be swapped for a real Uni3D
+# checkpoint/loader on the cluster without changing downstream code.
 
 model_size: small  # Options: small, medium, large (CPU-only, prefer small)
-checkpoint: null   # Will be downloaded on first use if implemented
+checkpoint: null   # Set to a real checkpoint once available
 pretrained: true
 frozen: true
 output_dim: 768
 
-note: "See CLAUDE.md 'Resolved Design Decisions' #5 for fallback rationale."
+note: "Use the retrieval pipeline's uni3d encoder path; replace with a real Uni3D checkpoint later."

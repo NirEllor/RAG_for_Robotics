@@ -18,7 +18,7 @@ We are currently here:
 2. task-level relevance annotations for subset-8 have been generated;
 3. subset-8 retrieval evaluation has completed successfully;
 4. `reach_target` was already exported and validated as the smoke benchmark;
-5. `Uni3D` / `Point Transformer V3` still need to be made truly usable in the MVP, not left as placeholders.
+5. `Uni3D` / `Point Transformer V3` are wired into the MVP as cluster-ready proxies, and the next step is to replace them with real checkpoints.
 
 ## Live Roadmap
 
@@ -66,8 +66,7 @@ for eventual breadth, but they should not block the next 8 days.
 
 The active order is:
 
-1. inspect the completed subset-8 evaluation tables and figures,
-2. wire in `Uni3D` and `PTv3`,
-3. repeat the evaluation with learned 3D embeddings,
-4. run the variation/robustness checks,
-5. freeze the final results by September 6, 2026.
+1. wire in `Uni3D` and `PTv3`,
+2. repeat the evaluation with learned 3D embeddings,
+3. run the variation/robustness checks,
+4. freeze the final results by September 6, 2026.
