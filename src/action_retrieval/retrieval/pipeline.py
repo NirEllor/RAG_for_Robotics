@@ -8,7 +8,7 @@ from typing import Iterable
 
 import numpy as np
 
-from action_retrieval.retrieval.dataset import ExportedEpisode, load_exported_episodes
+from action_retrieval.retrieval.dataset import ExportedEpisode, iter_exported_episodes
 from action_retrieval.retrieval.encoders import (
     EpisodeEmbedding,
     GeometryOnlyEncoder,
@@ -78,9 +78,8 @@ def run_leave_one_out_retrieval(
     seed: int = 42,
     exclude_query_episode: bool = True,
 ) -> RetrievalRunResult:
-    episodes = load_exported_episodes(dataset_root)
     embeddings = embed_episodes(
-        episodes,
+        iter_exported_episodes(dataset_root),
         encoder_name=encoder_name,
         output_dim=output_dim,
         seed=seed,

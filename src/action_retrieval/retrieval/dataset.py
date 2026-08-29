@@ -41,27 +41,31 @@ def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def load_exported_episodes(dataset_root: Path | str) -> list[ExportedEpisode]:
+def load_exported_episode(dataset_root: Path | str, row: pd.Series | dict[str, Any]) -> ExportedEpisode:
+    dataset_root = Path(dataset_root)
+    observation_path = dataset_root / str(row["observation_path"])
+    trajectory_path = dataset_root / str(row["trajectory_path"])
+    metadata_path = dataset_root / str(row["metadata_path"])
+    return ExportedEpisode(
+        episode_id=str(row["episode_id"]),
+        task_name=str(row["task_name"]),
+        split=str(row["split"]),
+        observation_path=observation_path,
+        trajectory_path=trajectory_path,
+        metadata_path=metadata_path,
+        observation=_load_npz(observation_path),
+        trajectory=_load_npz(trajectory_path),
+        metadata=_load_json(metadata_path),
+    )
+
+
+def iter_exported_episodes(dataset_root: Path | str):
     dataset_root = Path(dataset_root)
     manifest = load_manifest(dataset_root)
-    episodes: list[ExportedEpisode] = []
 
     for _, row in manifest.iterrows():
-        observation_path = dataset_root / str(row["observation_path"])
-        trajectory_path = dataset_root / str(row["trajectory_path"])
-        metadata_path = dataset_root / str(row["metadata_path"])
-        episodes.append(
-            ExportedEpisode(
-                episode_id=str(row["episode_id"]),
-                task_name=str(row["task_name"]),
-                split=str(row["split"]),
-                observation_path=observation_path,
-                trajectory_path=trajectory_path,
-                metadata_path=metadata_path,
-                observation=_load_npz(observation_path),
-                trajectory=_load_npz(trajectory_path),
-                metadata=_load_json(metadata_path),
-            )
-        )
+        yield load_exported_episode(dataset_root, row)
 
-    return episodes
+
+def load_exported_episodes(dataset_root: Path | str) -> list[ExportedEpisode]:
+    return list(iter_exported_episodes(dataset_root))

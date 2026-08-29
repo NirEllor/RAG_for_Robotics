@@ -18,7 +18,7 @@ from action_retrieval.evaluation.metrics import (
     precision_at_k,
     recall_at_k,
 )
-from action_retrieval.retrieval.dataset import load_exported_episodes
+from action_retrieval.retrieval.dataset import iter_exported_episodes
 from action_retrieval.retrieval.encoders import EpisodeEmbedding
 from action_retrieval.retrieval.pipeline import RetrievalRunResult, embed_episodes
 from action_retrieval.retrieval.ranking import RetrievalMatch, top_k_cosine
@@ -128,7 +128,6 @@ def evaluate_retrieval_methods(
     ks = sorted({int(k) for k in ks if int(k) > 0})
     if not ks:
         raise ValueError("At least one positive K value is required.")
-    episodes = load_exported_episodes(dataset_root)
     embeddings_cache: dict[str, list[EpisodeEmbedding]] = {}
 
     runs: list[RetrievalEvaluationRun] = []
@@ -136,7 +135,7 @@ def evaluate_retrieval_methods(
         embeddings = embeddings_cache.get(method)
         if embeddings is None:
             embeddings = embed_episodes(
-                episodes,
+                iter_exported_episodes(dataset_root),
                 encoder_name=method,
                 output_dim=output_dim,
                 seed=seed,
