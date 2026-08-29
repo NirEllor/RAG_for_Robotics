@@ -310,6 +310,13 @@ def _extract_checkpoint_state_dict(checkpoint: Any) -> dict[str, Any]:
     )
 
 
+def _load_checkpoint(path: Path) -> Any:
+    try:
+        return torch.load(path, map_location="cpu", weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location="cpu")
+
+
 def _env_int(name: str, default: int) -> int:
     value = os.getenv(name)
     if value is None or not value.strip():
@@ -775,7 +782,7 @@ class Uni3DEncoder:
         )
 
         model = create_uni3d(args)
-        checkpoint = torch.load(self.checkpoint, map_location="cpu")
+        checkpoint = _load_checkpoint(self.checkpoint)
         state_dict = _extract_checkpoint_state_dict(checkpoint)
         load_result = model.load_state_dict(state_dict, strict=False)
         missing_keys = getattr(load_result, "missing_keys", [])
@@ -994,7 +1001,7 @@ class PointTransformerV3Encoder:
             cls_mode=self.cls_mode,
         )
 
-        checkpoint = torch.load(self.checkpoint, map_location="cpu")
+        checkpoint = _load_checkpoint(self.checkpoint)
         state_dict = _extract_checkpoint_state_dict(checkpoint)
         load_result = model.load_state_dict(state_dict, strict=False)
         missing_keys = getattr(load_result, "missing_keys", [])
