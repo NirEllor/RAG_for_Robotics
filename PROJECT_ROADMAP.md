@@ -1,41 +1,76 @@
 # Project Roadmap
 
-| Step | Goal | Current status | Next concrete work | Done when |
+This roadmap is the live execution plan for the next 8 days. It is aligned with the research
+direction approved by Dr. Benaim:
+
+> Does 3D geometric similarity between scenes, encoded via a pre-trained 3D representation,
+> provide a meaningful retrieval signal for robotic manipulation planning, and under what
+> scene variations does this signal remain reliable?
+
+Current date: August 29, 2026
+Target deadline: September 6, 2026
+
+## Where We Are Now
+
+We are currently here:
+
+1. the CLUSTER is building the 8-task RLBench subset dataset;
+2. `reach_target` has already been exported and validated;
+3. retrieval evaluation works on `reach_target`;
+4. we still need a clean subset-8 evaluation protocol;
+5. `Uni3D` / `Point Transformer V3` must be made truly usable in the MVP, not left as placeholders.
+
+## Live Roadmap
+
+| Status | Step | Goal | Next concrete work | Done when |
 | --- | --- | --- | --- | --- |
-| 1 | Finish dataset ingestion | A raw RLBench mirror is being extracted and the multi-task export path is wired up | Complete the remaining raw-task extraction, then rebuild the multi-task dataset | The dataset root contains the intended task set and the validator passes |
-| 2 | Make retrieval color-aware | Retrieval MVP exists with `random`, `pose_descriptor`, `rgb_histogram`, and `geometry_only` | Improve the baseline so global color and object-specific color differences are captured more explicitly | Retrieval can separate episodes that differ mainly by color when that matters |
-| 3 | Formalize evaluation | Top-1 / Top-K evaluation already exists | Report methods side by side with a stable protocol, relevance labels, and visual inspection | Results are reproducible and comparable across methods and cutoffs |
-| 4 | Add learned 3D backbones | Hand-crafted encoders are the current baseline | Integrate `Uni3D` first, then `Point Transformer V3` through the same encoder API and cluster job helpers | Learned 3D embeddings run end-to-end through retrieval and evaluation |
-| 5 | Scale to more tasks | Only a subset of tasks is currently available locally | Add more RLBench tasks and more episodes, including live generation only if the simulator path becomes stable | The dataset spans several tasks and a larger episode count |
-| 6 | Add downstream planning | Not implemented yet | Implement a nearest-trajectory transfer baseline from retrieved episodes | Retrieval improves a simple downstream planning control versus no retrieval |
-| 7 | Robustness and adaptation | Not implemented yet | Test viewpoint changes, partial occlusion, and lightweight adaptation | Retrieval remains useful under perturbations |
-| 8 | Stretch goals | Not implemented yet | Explore flow matching or more advanced planners | Only after the earlier steps are stable and reproducible |
+| NOW | 1 | Finish the 8-task dataset build | Let the SLURM build complete, validate the manifest, and keep the subset dataset root stable | `v2_multitask_subset8` exists, validates, and contains the 8 intended tasks |
+| NEXT | 2 | Build evaluation labels for subset-8 | Generate task-level relevance annotations from the subset manifest | A JSON annotations file exists for all subset-8 episodes |
+| NEXT | 3 | Run clean retrieval evaluation on subset-8 | Evaluate `no retrieval`, `random`, `image`, `geometry`, and color-aware baselines on the same episodes/candidate sets | Results are reproducible and report Top-1 / Top-K side by side |
+| NEXT | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks become distinguishable in retrieval |
+| NEXT | 5 | Integrate `Uni3D` and `PTv3` | Replace placeholder backbones with real cluster-ready learned 3D encoders | `uni3d` and `ptv3` run end-to-end through the same retrieval API |
+| NEXT | 6 | Re-run evaluation with learned 3D backbones | Compare learned 3D retrieval against image and hand-crafted baselines | We have fair, quantitative evidence for 3D geometric retrieval |
+| LATER IN WEEK | 7 | Robustness tests | Evaluate viewpoint change, partial occlusion, and geometry variation | We can state under which scene changes the signal remains reliable |
+| LATER IN WEEK | 8 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
+| LAST | 9 | Freeze final outputs | Lock reports, figures, configs, and README reproduction commands | Final results are ready to present and reproduce |
 
 ## Recommended Near-Term Task Subset
 
-For the current time budget, focus the main experiments on a smaller subset of tasks that gives
-good diversity without creating too much debugging overhead. Recommended subset:
+The 8-task subset is the right near-term benchmark because it covers diverse manipulation patterns
+without blowing up debugging time:
 
-1. `reach_target` - saved-demo anchor task and smoke-test baseline.
-2. `open_drawer` - simple articulated object interaction.
-3. `slide_block_to_color_target` - important for color-aware retrieval.
-4. `close_jar` - precision grasping and closure geometry.
-5. `insert_onto_square_peg` - tight pose/alignment task.
-6. `stack_blocks` - classic stacking geometry.
-7. `place_shape_in_shape_sorter` - shape/category discrimination.
-8. `light_bulb_in` - fine manipulation with a compact target region.
+1. `reach_target`
+2. `open_drawer`
+3. `slide_block_to_color_target`
+4. `close_jar`
+5. `stack_blocks`
+6. `place_shape_in_shape_sorter`
+7. `light_bulb_in`
+8. `insert_onto_square_peg`
 
-Keep the remaining RLBench tasks in the full config as future expansion candidates. They are
-useful later for scaling and robustness, but they should not block the near-term MVP.
+Keep the remaining 11 RLBench tasks in the full config as future scaling candidates. They matter
+for eventual breadth, but they should not block the next 8 days.
+
+## Deadline Plan
+
+| Date | Focus | Output |
+| --- | --- | --- |
+| Aug 29-30 | Finish dataset subset-8 build and validation | Stable subset dataset root and manifest |
+| Aug 31 | Build evaluation labels and sanity-check them | Subset-8 annotations JSON |
+| Sep 1-2 | Run clean subset-8 retrieval evaluation | Tables for `random`, image, geometry, and color-aware baselines |
+| Sep 3-4 | Integrate `Uni3D` / `PTv3` | Cluster-ready learned 3D encoder path |
+| Sep 5 | Re-run evaluation and robustness checks | Learned 3D comparison and variation analysis |
+| Sep 6 | Freeze results and write the final summary | Presentation-ready outputs and reproducible commands |
 
 ## Immediate Priority
 
-Right now the most important order is:
+The active order is:
 
-1. finish ingesting the RLBench raw mirror,
-2. rebuild the multi-task dataset,
-3. rebuild the dataset first on the recommended subset above,
-4. run the `reach_target` evaluation cleanly,
-5. integrate and validate `Uni3D/PTv3` on the cluster as required MVP backbones,
-6. then improve the retrieval representation to handle color more explicitly,
-7. later expand back to the full 19-task set once the MVP is stable.
+1. finish the subset-8 dataset build on the CLUSTER,
+2. validate that dataset root,
+3. generate subset-8 annotations,
+4. run clean retrieval evaluation,
+5. wire in `Uni3D` and `PTv3`,
+6. repeat the evaluation with learned 3D embeddings,
+7. run the variation/robustness checks,
+8. freeze the final results by September 6, 2026.
