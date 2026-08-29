@@ -758,7 +758,8 @@ class Uni3DEncoder:
             from models.uni3d import create_uni3d  # type: ignore
         except Exception as exc:  # pragma: no cover - depends on cluster install
             raise ImportError(
-                f"Could not import the official Uni3D model code from {self.repo_root}"
+                f"Could not import the official Uni3D model code from {self.repo_root}: "
+                f"{exc.__class__.__name__}: {exc}"
             ) from exc
 
         args = SimpleNamespace(
@@ -969,7 +970,8 @@ class PointTransformerV3Encoder:
             PointTransformerV3 = getattr(module, "PointTransformerV3")
         except AttributeError as exc:
             raise ImportError(
-                f"PTv3 model module at {model_module_path} does not expose PointTransformerV3"
+                f"PTv3 model module at {model_module_path} does not expose PointTransformerV3: "
+                f"{exc.__class__.__name__}: {exc}"
             ) from exc
 
         model = PointTransformerV3(
