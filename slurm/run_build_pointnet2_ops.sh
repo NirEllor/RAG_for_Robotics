@@ -15,6 +15,7 @@
 
 #SBATCH --job-name=pnet2_build
 #SBATCH --partition=short
+#SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=2
 #SBATCH --time=02:00:00
