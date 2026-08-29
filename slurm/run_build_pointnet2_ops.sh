@@ -33,6 +33,16 @@ CUDA_ROOT="${CUDA_ROOT:-/usr/local/nvidia/cuda/12.9}"
 cd "$PROJECT_ROOT"
 source "$VENV_DIR/bin/activate"
 
+if ! command -v module >/dev/null 2>&1; then
+  if [ -f /etc/profile.d/modules.sh ]; then
+    # shellcheck disable=SC1091
+    source /etc/profile.d/modules.sh
+  elif [ -f /usr/share/lmod/lmod/init/bash ]; then
+    # shellcheck disable=SC1091
+    source /usr/share/lmod/lmod/init/bash
+  fi
+fi
+
 module purge
 module load "$CUDA_MODULE"
 
