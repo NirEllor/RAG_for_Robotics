@@ -22,8 +22,9 @@ We are currently here:
 2. task-level relevance annotations for subset-8 have been generated;
 3. subset-8 retrieval evaluation has completed successfully;
 4. `reach_target` was already exported and validated as the smoke benchmark;
-5. `Uni3D` / `Point Transformer V3` are wired into the MVP as cluster-ready proxies and have already been evaluated in that proxy form;
-6. the current retrieval evidence is strong for color-aware baselines, but we still need a real learned 3D backbone result and robustness checks to satisfy the research question.
+5. `Uni3D` is now wired to try a real pretrained checkpoint first, with a safe proxy fallback if the cluster setup is incomplete;
+6. `Point Transformer V3` remains a proxy backend for now;
+7. the current retrieval evidence is strong for color-aware baselines, but we still need a real learned 3D backbone result and robustness checks to satisfy the research question.
 
 ## Live Roadmap
 
@@ -33,11 +34,12 @@ We are currently here:
 | DONE | 2 | Build evaluation labels for subset-8 | Generate task-level relevance annotations from the subset manifest | A JSON annotations file exists for all subset-8 episodes |
 | DONE | 3 | Run clean retrieval evaluation on subset-8 | Evaluate `no retrieval`, `random`, `image`, `geometry`, and color-aware baselines on the same episodes/candidate sets | Results are reproducible and report Top-1 / Top-K side by side |
 | DONE | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks are distinguishable and color-aware baselines are evaluated |
-| IN PROGRESS | 5 | Make the learned 3D backbones real | Replace the proxy `uni3d` / `ptv3` encoders with real checkpoints if available on the cluster | `uni3d` and `ptv3` reflect an actual learned 3D representation rather than a handcrafted proxy |
-| NEXT | 6 | Re-run evaluation with learned 3D backbones | Compare learned 3D retrieval against image and hand-crafted baselines | We have fair, quantitative evidence for 3D geometric retrieval |
-| NEXT | 7 | Robustness tests | Evaluate viewpoint change, partial occlusion, and geometry variation | We can state under which scene changes the signal remains reliable |
-| NEXT | 8 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
-| LAST | 9 | Freeze final outputs | Lock reports, figures, configs, commands, and the final comparison tables | Final results are ready to present and reproduce |
+| IN PROGRESS | 5 | Make Uni3D real | Load an actual pretrained Uni3D checkpoint on the cluster and validate that the retrieval API uses it | `uni3d` runs on the official backbone instead of the handcrafted proxy |
+| NEXT | 6 | Make PTv3 real | Add a real Point Transformer V3 backbone or clearly mark it as a fallback-only comparison path | We have a second real learned 3D baseline for comparison |
+| NEXT | 7 | Re-run evaluation with learned 3D backbones | Compare learned 3D retrieval against image and hand-crafted baselines | We have fair, quantitative evidence for 3D geometric retrieval |
+| NEXT | 8 | Robustness tests | Evaluate viewpoint change, partial occlusion, and geometry variation | We can state under which scene changes the signal remains reliable |
+| NEXT | 9 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
+| LAST | 10 | Freeze final outputs | Lock reports, figures, configs, commands, and the final comparison tables | Final results are ready to present and reproduce |
 
 ## Recommended Near-Term Task Subset
 
@@ -71,11 +73,12 @@ for eventual breadth, but they should not block the next 8 days.
 
 The active order is:
 
-1. make the learned 3D backbones real or, if the cluster cannot support that in time, clearly document the proxy limitation,
-2. repeat the evaluation with learned 3D embeddings,
-3. run the variation/robustness checks,
-4. add the minimal downstream planning baseline,
-5. freeze the final results by September 6, 2026.
+1. finish the real Uni3D hookup and validate it on the cluster,
+2. add a real PTv3 path or clearly scope it as fallback-only,
+3. repeat the evaluation with learned 3D embeddings,
+4. run the variation/robustness checks,
+5. add the minimal downstream planning baseline,
+6. freeze the final results by September 6, 2026.
 
 ## What Is Already Effectively Done
 
@@ -85,4 +88,4 @@ The active order is:
 | Evaluation labels | Done | Subset-8 annotations JSON exists. |
 | Retrieval evaluation | Done | Baselines and proxy 3D backbones have been evaluated on subset-8. |
 | Color-aware retrieval | Done | `global_color` and `rgb_histogram` are implemented and empirically strong. |
-| Uni3D/PTv3 integration | In progress | The interfaces exist and proxies run end-to-end, but real checkpoints are still pending. |
+| Uni3D/PTv3 integration | In progress | Uni3D now has a real-backend adapter; PTv3 is still proxy-only. |

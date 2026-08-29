@@ -1,16 +1,20 @@
 name: uni3d
 type: 3d_foundation
-status: READY_FOR_MVP_PROXY
+status: REAL_BACKEND_READY
 
 # Uni3D-style foundation model for 3D scene understanding.
-# The repository currently ships a deterministic, CPU-friendly proxy encoder
-# that preserves the retrieval interface. It can be swapped for a real Uni3D
-# checkpoint/loader on the cluster without changing downstream code.
+# The retrieval pipeline now supports two modes:
+#   1. real Uni3D loading when UNI3D_REPO_ROOT + UNI3D_CHECKPOINT are set
+#   2. deterministic proxy fallback when the real backend is unavailable
+#
+# To enable the real model on the cluster, point UNI3D_REPO_ROOT at a cloned
+# copy of the official Uni3D repository and UNI3D_CHECKPOINT at the model
+# checkpoint file. The loader will then use the official create_uni3d() API.
 
-model_size: small  # Options: small, medium, large (CPU-only, prefer small)
-checkpoint: null   # Set to a real checkpoint once available
+model_size: small  # Proxy-friendly default; the real backend reads env vars.
+checkpoint: null   # Kept for documentation; prefer UNI3D_CHECKPOINT at runtime.
 pretrained: true
 frozen: true
-output_dim: 768
+output_dim: 1024
 
-note: "Use the retrieval pipeline's uni3d encoder path; replace with a real Uni3D checkpoint later."
+note: "Use the retrieval pipeline's uni3d encoder path; set env vars to activate the real Uni3D checkpoint."

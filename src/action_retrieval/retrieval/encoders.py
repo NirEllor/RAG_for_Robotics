@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import sys
+import warnings
 from dataclasses import dataclass
+from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
+import torch
 
 from action_retrieval.retrieval.dataset import ExportedEpisode
 
@@ -113,6 +119,44 @@ def _primary_point_cloud_points(episode: ExportedEpisode) -> np.ndarray | None:
         if points.size > 0:
             return points
     return None
+
+
+def _primary_xyzrgb_points(episode: ExportedEpisode) -> np.ndarray | None:
+    observation = episode.observation
+    point_cloud = None
+    for key in ("front_point_cloud_world", "front_point_cloud_camera"):
+        if observation.get(key) is not None:
+            point_cloud = observation.get(key)
+            break
+    if point_cloud is None:
+        return None
+
+    points = _as_float32(point_cloud)
+    if points.ndim == 4:
+        points = points[0]
+    points = points.reshape(-1, 3)
+
+    front_rgb = observation.get("front_rgb")
+    if front_rgb is None:
+        colors = np.zeros_like(points, dtype=np.float32)
+    else:
+        rgb = _as_float32(front_rgb)
+        if rgb.ndim == 4:
+            rgb = rgb[0]
+        colors = rgb.reshape(-1, 3) / 255.0
+
+    if colors.shape[0] != points.shape[0]:
+        sample_count = min(points.shape[0], colors.shape[0])
+        points = points[:sample_count]
+        colors = colors[:sample_count]
+
+    finite_mask = np.isfinite(points).all(axis=1) & np.isfinite(colors).all(axis=1)
+    points = points[finite_mask]
+    colors = colors[finite_mask]
+    if points.size == 0:
+        return None
+
+    return np.concatenate([points, colors], axis=1).astype(np.float32)
 
 
 def _normalize_point_cloud(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
@@ -230,6 +274,53 @@ def _build_point_cloud_backbone_embedding(
         axis=0,
     )
     return _normalize(features)
+
+
+def _sample_xyzrgb_points(xyzrgb: np.ndarray, sample_count: int) -> np.ndarray:
+    if xyzrgb.size == 0:
+        return np.zeros((sample_count, 6), dtype=np.float32)
+    if xyzrgb.shape[0] >= sample_count:
+        indices = np.linspace(0, xyzrgb.shape[0] - 1, sample_count, dtype=np.int64)
+        return xyzrgb[indices].astype(np.float32)
+    repeats = np.resize(xyzrgb, (sample_count, xyzrgb.shape[1]))
+    return repeats.astype(np.float32)
+
+
+def _coerce_optional_path(value: str | os.PathLike[str] | None) -> Path | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text.lower() in {"none", "null"}:
+        return None
+    return Path(text).expanduser()
+
+
+def _extract_checkpoint_state_dict(checkpoint: Any) -> dict[str, Any]:
+    if isinstance(checkpoint, dict):
+        for key in ("module", "state_dict", "model", "ema"):
+            nested = checkpoint.get(key)
+            if isinstance(nested, dict):
+                return nested
+        if all(isinstance(key, str) for key in checkpoint.keys()):
+            return checkpoint
+    raise TypeError(
+        "Expected a checkpoint dictionary containing a state dict under one of the keys "
+        "'module', 'state_dict', 'model', or 'ema'."
+    )
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return int(value)
+
+
+def _env_float(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return float(value)
 
 
 @dataclass(frozen=True)
@@ -537,21 +628,158 @@ class RandomEpisodeEncoder:
 
 
 class Uni3DEncoder:
-    """CPU-friendly Uni3D-style 3D foundation encoder proxy.
+    """Uni3D-style 3D foundation encoder with real-backend fallback support.
 
-    The repository does not vendor a real Uni3D checkpoint. This backend is a
-    deterministic, cluster-ready point-cloud encoder that matches the intended
-    interface and can later be swapped for a real Uni3D loader without changing
-    downstream retrieval code.
+    If ``UNI3D_REPO_ROOT`` and ``UNI3D_CHECKPOINT`` are set, this class tries to
+    load the official Uni3D implementation from the cloned repository and run a
+    real pretrained checkpoint. If anything is missing, it falls back to the
+    deterministic proxy encoder so the retrieval pipeline keeps working.
     """
 
     name = "uni3d"
 
-    def __init__(self, *, sample_count: int = 128, output_dim: int = 768, **_: Any):
+    def __init__(
+        self,
+        *,
+        sample_count: int = 10000,
+        output_dim: int = 1024,
+        repo_root: str | os.PathLike[str] | None = None,
+        checkpoint: str | os.PathLike[str] | None = None,
+        pc_model: str | None = None,
+        pretrained_pc: str | os.PathLike[str] | None = None,
+        pc_feat_dim: int | None = None,
+        embed_dim: int | None = None,
+        group_size: int | None = None,
+        num_group: int | None = None,
+        pc_encoder_dim: int | None = None,
+        drop_path_rate: float | None = None,
+        patch_dropout: float | None = None,
+        device: str | None = None,
+        use_real: bool | None = None,
+        **_: Any,
+    ):
         self.sample_count = sample_count
         self.output_dim = output_dim
+        self.repo_root = _coerce_optional_path(repo_root or os.getenv("UNI3D_REPO_ROOT"))
+        self.checkpoint = _coerce_optional_path(checkpoint or os.getenv("UNI3D_CHECKPOINT"))
+        self.pc_model = pc_model or os.getenv(
+            "UNI3D_PC_MODEL",
+            "eva_giant_patch14_560.m30m_ft_in22k_in1k",
+        )
+        self.pretrained_pc = str(
+            pretrained_pc or os.getenv("UNI3D_PRETRAINED_PC") or ""
+        ).strip()
+        self.pc_feat_dim = pc_feat_dim if pc_feat_dim is not None else _env_int("UNI3D_PC_FEAT_DIM", 1408)
+        self.embed_dim = embed_dim if embed_dim is not None else _env_int("UNI3D_EMBED_DIM", output_dim)
+        self.group_size = group_size if group_size is not None else _env_int("UNI3D_GROUP_SIZE", 64)
+        self.num_group = num_group if num_group is not None else _env_int("UNI3D_NUM_GROUP", 512)
+        self.pc_encoder_dim = (
+            pc_encoder_dim if pc_encoder_dim is not None else _env_int("UNI3D_PC_ENCODER_DIM", 512)
+        )
+        self.drop_path_rate = (
+            drop_path_rate if drop_path_rate is not None else _env_float("UNI3D_DROP_PATH_RATE", 0.0)
+        )
+        self.patch_dropout = (
+            patch_dropout if patch_dropout is not None else _env_float("UNI3D_PATCH_DROPOUT", 0.0)
+        )
+        self.device = torch.device(device or os.getenv("UNI3D_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu"))
+        env_use_real = os.getenv("UNI3D_USE_REAL")
+        if use_real is not None:
+            self.use_real = use_real
+        elif env_use_real is not None and env_use_real.strip():
+            self.use_real = env_use_real.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            self.use_real = self.repo_root is not None and self.checkpoint is not None
+        self._real_model: Any | None = None
+        self._real_backend_attempted = False
+        self._real_backend_failed = False
+
+    def _build_real_backend(self) -> Any:
+        if self.repo_root is None or self.checkpoint is None:
+            raise FileNotFoundError(
+                "Set both UNI3D_REPO_ROOT and UNI3D_CHECKPOINT to enable the real Uni3D backend."
+            )
+        if not self.repo_root.exists():
+            raise FileNotFoundError(f"UNI3D repo root does not exist: {self.repo_root}")
+        if not self.checkpoint.exists():
+            raise FileNotFoundError(f"UNI3D checkpoint does not exist: {self.checkpoint}")
+
+        repo_root_str = str(self.repo_root)
+        if repo_root_str not in sys.path:
+            sys.path.insert(0, repo_root_str)
+
+        try:
+            from models.uni3d import create_uni3d  # type: ignore
+        except Exception as exc:  # pragma: no cover - depends on cluster install
+            raise ImportError(
+                f"Could not import the official Uni3D model code from {self.repo_root}"
+            ) from exc
+
+        args = SimpleNamespace(
+            pc_model=self.pc_model,
+            pretrained_pc=self.pretrained_pc,
+            drop_path_rate=self.drop_path_rate,
+            pc_feat_dim=self.pc_feat_dim,
+            embed_dim=self.embed_dim,
+            group_size=self.group_size,
+            num_group=self.num_group,
+            pc_encoder_dim=self.pc_encoder_dim,
+            patch_dropout=self.patch_dropout,
+        )
+
+        model = create_uni3d(args)
+        checkpoint = torch.load(self.checkpoint, map_location="cpu")
+        state_dict = _extract_checkpoint_state_dict(checkpoint)
+        load_result = model.load_state_dict(state_dict, strict=False)
+        missing_keys = getattr(load_result, "missing_keys", [])
+        unexpected_keys = getattr(load_result, "unexpected_keys", [])
+        if missing_keys or unexpected_keys:
+            warnings.warn(
+                "Loaded Uni3D checkpoint with a non-empty key mismatch. "
+                f"missing={len(missing_keys)}, unexpected={len(unexpected_keys)}. "
+                "The real backend is active, but you should verify the checkpoint matches the code."
+            )
+        model.eval()
+        model.to(self.device)
+        return model
+
+    def _get_real_backend(self) -> Any | None:
+        if self._real_backend_failed:
+            return None
+        if self._real_model is not None:
+            return self._real_model
+        if self._real_backend_attempted:
+            return None
+        self._real_backend_attempted = True
+        try:
+            self._real_model = self._build_real_backend()
+        except Exception as exc:
+            self._real_backend_failed = True
+            warnings.warn(
+                "Uni3D real backend is unavailable, so the proxy encoder will be used instead. "
+                f"Reason: {exc}"
+            )
+            self._real_model = None
+        return self._real_model
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        if self.use_real:
+            model = self._get_real_backend()
+            if model is not None:
+                xyzrgb = _primary_xyzrgb_points(episode)
+                if xyzrgb is not None:
+                    sampled = _sample_xyzrgb_points(xyzrgb, self.sample_count)
+                    pc = torch.from_numpy(sampled).unsqueeze(0).to(self.device)
+                    with torch.inference_mode():
+                        embedding = model.encode_pc(pc)
+                    if isinstance(embedding, (tuple, list)):
+                        embedding = embedding[0]
+                    if embedding.ndim > 1:
+                        embedding = embedding.squeeze(0)
+                    vector = embedding.detach().float().cpu().numpy().reshape(-1)
+                    if vector.size > 0:
+                        return _normalize(vector)
+
         vector = _build_point_cloud_backbone_embedding(
             episode,
             variant="uni3d",

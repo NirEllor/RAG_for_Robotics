@@ -61,7 +61,7 @@ The goal is to answer three questions quickly:
 | `GlobalColorEncoder` | `global_color` | Global + temporal color summaries | Baseline appearance encoder |
 | `GeometryOnlyEncoder` | `geometry_only` | 3D geometry + robot kinematics, no RGB | Baseline geometry encoder |
 | `RandomEpisodeEncoder` | `random` | Deterministic seeded random projection | Sanity-check baseline |
-| `Uni3DEncoder` | `uni3d` | Point-cloud proxy for a 3D foundation model | Cluster-ready proxy today, real checkpoint later |
+| `Uni3DEncoder` | `uni3d` | Official Uni3D checkpoint when configured, proxy fallback otherwise | Real checkpoint loads when `UNI3D_REPO_ROOT` and `UNI3D_CHECKPOINT` are set |
 | `PointTransformerV3Encoder` | `ptv3` | Point-cloud proxy for a point transformer backbone | Cluster-ready proxy today, real checkpoint later |
 
 ## 4. Evaluation APIs
