@@ -22,8 +22,8 @@ We are currently here:
 2. task-level relevance annotations for subset-8 have been generated;
 3. subset-8 retrieval evaluation has completed successfully;
 4. `reach_target` was already exported and validated as the smoke benchmark;
-5. `Uni3D` / `Point Transformer V3` are wired into the MVP as cluster-ready proxies;
-6. the current retrieval evidence is strong for color-aware baselines, but we still need a learned 3D backbone result and robustness checks to satisfy the research question.
+5. `Uni3D` / `Point Transformer V3` are wired into the MVP as cluster-ready proxies and have already been evaluated in that proxy form;
+6. the current retrieval evidence is strong for color-aware baselines, but we still need a real learned 3D backbone result and robustness checks to satisfy the research question.
 
 ## Live Roadmap
 
@@ -32,11 +32,11 @@ We are currently here:
 | DONE | 1 | Finish the 8-task dataset build | Let the SLURM build complete, validate the manifest, and keep the subset dataset root stable | `v2_multitask_subset8` exists, validates, and contains the 8 intended tasks |
 | DONE | 2 | Build evaluation labels for subset-8 | Generate task-level relevance annotations from the subset manifest | A JSON annotations file exists for all subset-8 episodes |
 | DONE | 3 | Run clean retrieval evaluation on subset-8 | Evaluate `no retrieval`, `random`, `image`, `geometry`, and color-aware baselines on the same episodes/candidate sets | Results are reproducible and report Top-1 / Top-K side by side |
-| NEXT | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks become distinguishable in retrieval |
-| NEXT | 5 | Make the learned 3D backbones real | Replace the proxy `uni3d` / `ptv3` encoders with real checkpoints if available on the cluster | `uni3d` and `ptv3` reflect an actual learned 3D representation rather than a handcrafted proxy |
+| DONE | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks are distinguishable and color-aware baselines are evaluated |
+| IN PROGRESS | 5 | Make the learned 3D backbones real | Replace the proxy `uni3d` / `ptv3` encoders with real checkpoints if available on the cluster | `uni3d` and `ptv3` reflect an actual learned 3D representation rather than a handcrafted proxy |
 | NEXT | 6 | Re-run evaluation with learned 3D backbones | Compare learned 3D retrieval against image and hand-crafted baselines | We have fair, quantitative evidence for 3D geometric retrieval |
-| LATER IN WEEK | 7 | Robustness tests | Evaluate viewpoint change, partial occlusion, and geometry variation | We can state under which scene changes the signal remains reliable |
-| LATER IN WEEK | 8 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
+| NEXT | 7 | Robustness tests | Evaluate viewpoint change, partial occlusion, and geometry variation | We can state under which scene changes the signal remains reliable |
+| NEXT | 8 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
 | LAST | 9 | Freeze final outputs | Lock reports, figures, configs, commands, and the final comparison tables | Final results are ready to present and reproduce |
 
 ## Recommended Near-Term Task Subset
@@ -76,3 +76,13 @@ The active order is:
 3. run the variation/robustness checks,
 4. add the minimal downstream planning baseline,
 5. freeze the final results by September 6, 2026.
+
+## What Is Already Effectively Done
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Dataset export | Done | `v2_multitask_subset8` is built and validated. |
+| Evaluation labels | Done | Subset-8 annotations JSON exists. |
+| Retrieval evaluation | Done | Baselines and proxy 3D backbones have been evaluated on subset-8. |
+| Color-aware retrieval | Done | `global_color` and `rgb_histogram` are implemented and empirically strong. |
+| Uni3D/PTv3 integration | In progress | The interfaces exist and proxies run end-to-end, but real checkpoints are still pending. |
