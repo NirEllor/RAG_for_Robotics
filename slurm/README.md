@@ -75,3 +75,13 @@ cluster launcher for those backends; it can be used now with the CPU-friendly
 proxy encoders and later swapped to real checkpoints without changing the job
 shape. The main evaluation helper also includes `uni3d` and `ptv3` in its
 default method list.
+
+## Download jobs for real checkpoints
+
+If you want the real pretrained backbones, use the download helpers first:
+
+1. `./slurm/run_download_uni3d.sh`
+2. `./slurm/run_download_ptv3.sh`
+
+Both jobs expect `HF_TOKEN` to be exported before submission and will store
+weights under cluster-local checkpoint directories.
