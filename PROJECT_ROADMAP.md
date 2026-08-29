@@ -10,6 +10,10 @@ direction approved by Dr. Benaim:
 Current date: August 29, 2026
 Target deadline: September 6, 2026
 
+## Research Status in One Sentence
+
+We now have a working retrieval-and-evaluation pipeline on the 8-task subset; the strongest current baselines are color-aware, while the remaining open question is whether a real learned 3D backbone can beat those baselines under scene variation.
+
 ## Where We Are Now
 
 We are currently here:
