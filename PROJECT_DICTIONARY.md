@@ -3,6 +3,9 @@
 This file is the plain-language reference for the project. It explains the
 main terms, files, data objects, and the math notation used across the repo.
 
+If you want the function-level view of the code, see
+[`PROJECT_API_REFERENCE.md`](PROJECT_API_REFERENCE.md).
+
 ## 1. Project in One Sentence
 
 `RAG_for_Robotics` is a robotics retrieval project: given a robot scene or
@@ -274,4 +277,3 @@ If you want to understand the repo in order:
 3. Read `PROJECT_ROADMAP.md` for the next steps.
 4. Read `README.md` for the short summary.
 5. Read `scripts/smoke_env.py` and the dataset scripts for the implementation.
-
