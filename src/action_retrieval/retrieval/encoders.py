@@ -1251,14 +1251,30 @@ class PointTransformerV3Encoder:
             layout = _detect_ptv3_repo_layout(self.repo_root)
 
         if layout == "pointcept":
+            pointcept_pkg_root = self.repo_root / "pointcept"
+            pointcept_models_root = pointcept_pkg_root / "models"
+            pointcept_utils_root = pointcept_models_root / "utils"
             try:
-                sys.path.insert(0, str(self.repo_root))
-                from pointcept.models.builder import build_model  # type: ignore
-                from pointcept.models.utils.structure import Point  # type: ignore
+                _ensure_package_module("pointcept", pointcept_pkg_root)
+                _ensure_package_module("pointcept.models", pointcept_models_root)
+                _ensure_package_module("pointcept.models.utils", pointcept_utils_root)
+                builder_module = _load_module_from_path(
+                    "pointcept.models.builder",
+                    pointcept_models_root / "builder.py",
+                    pointcept_models_root,
+                )
+                structure_module = _load_module_from_path(
+                    "pointcept.models.utils.structure",
+                    pointcept_utils_root / "structure.py",
+                    pointcept_utils_root,
+                )
+                build_model = getattr(builder_module, "build_model")
+                Point = getattr(structure_module, "Point")
             except Exception as exc:
                 raise ImportError(
                     "Could not import Pointcept PTv3 runtime from the cloned repo. "
-                    "Make sure PTV3_REPO_ROOT points to a Pointcept checkout that matches v1.5.2."
+                    "Make sure PTV3_REPO_ROOT points to a Pointcept checkout that matches v1.5.2. "
+                    f"Cause: {exc.__class__.__name__}: {exc}"
                 ) from exc
 
             num_classes = _infer_ptv3_num_classes(state_dict, default=20)
