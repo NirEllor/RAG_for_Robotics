@@ -6,8 +6,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/config.sh"
+# Use an absolute repo path so SLURM's spool copy does not break config loading.
+PROJECT_ROOT="${PROJECT_ROOT:-/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics}"
+source "$PROJECT_ROOT/slurm/config.sh"
 
 DIAG_MEM_GB="${DIAG_MEM_GB:-48G}"
 CUDA_MODULE="${CUDA_MODULE:-cuda/12.9}"
