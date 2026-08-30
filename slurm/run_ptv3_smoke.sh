@@ -15,8 +15,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/config.sh"
+PROJECT_ROOT="/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics"
+source "$PROJECT_ROOT/slurm/config.sh"
 
 PTV3_SMOKE_NODE_ARGS="${PTV3_SMOKE_NODE_ARGS:---partition=short --gres=gpu:1 --nodelist=silico-013}"
 CUDA_MODULE="${CUDA_MODULE:-cuda/12.9}"
