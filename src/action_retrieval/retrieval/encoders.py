@@ -561,6 +561,16 @@ def _load_module_from_path(module_name: str, module_path: Path, package_path: Pa
     return module
 
 
+def _offset2batch(offset: torch.Tensor) -> torch.Tensor:
+    bincount = offset2bincount(offset)
+    return torch.arange(len(bincount), device=offset.device, dtype=torch.long).repeat_interleave(bincount)
+
+
+@torch.inference_mode()
+def _batch2offset(batch: torch.Tensor) -> torch.Tensor:
+    return torch.cumsum(batch.bincount(), dim=0).long()
+
+
 def _infer_ptv3_num_classes(state_dict: dict[str, Any], default: int = 20) -> int:
     for key in ("seg_head.weight", "module.seg_head.weight"):
         tensor = state_dict.get(key)
@@ -1257,7 +1267,17 @@ class PointTransformerV3Encoder:
             try:
                 _ensure_package_module("pointcept", pointcept_pkg_root)
                 _ensure_package_module("pointcept.models", pointcept_models_root)
-                _ensure_package_module("pointcept.models.utils", pointcept_utils_root)
+                pointcept_utils_module = _ensure_package_module("pointcept.models.utils", pointcept_utils_root)
+                pointcept_utils_module.offset2batch = _offset2batch  # type: ignore[attr-defined]
+                pointcept_utils_module.batch2offset = _batch2offset  # type: ignore[attr-defined]
+                pointcept_utils_module.__all__ = ["offset2batch", "batch2offset"]  # type: ignore[attr-defined]
+                serialization_module_path = pointcept_utils_root / "serialization.py"
+                if serialization_module_path.exists():
+                    _load_module_from_path(
+                        "pointcept.models.utils.serialization",
+                        serialization_module_path,
+                        pointcept_utils_root,
+                    )
                 builder_module = _load_module_from_path(
                     "pointcept.models.builder",
                     pointcept_models_root / "builder.py",
@@ -1270,6 +1290,7 @@ class PointTransformerV3Encoder:
                 )
                 build_model = getattr(builder_module, "build_model")
                 Point = getattr(structure_module, "Point")
+                pointcept_utils_module.Point = Point  # type: ignore[attr-defined]
             except Exception as exc:
                 raise ImportError(
                     "Could not import Pointcept PTv3 runtime from the cloned repo. "
