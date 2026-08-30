@@ -24,8 +24,33 @@ ENV_DIR="${PTV3_ENV_DIR:-/cs/labs/raananf/ellorw.nir/3d_cv_dl/conda_envs/ptv3-po
 PYTHON_VERSION="${PYTHON_VERSION:-3.10}"
 
 if ! command -v conda >/dev/null 2>&1; then
-  echo "conda is not available in this shell."
-  echo "Load/activate your conda distribution first, then rerun this script."
+  CONDA_SH_CANDIDATES=(
+    "${CONDA_SH:-}"
+    "$HOME/miniconda3/etc/profile.d/conda.sh"
+    "$HOME/anaconda3/etc/profile.d/conda.sh"
+    "/opt/conda/etc/profile.d/conda.sh"
+    "/opt/miniconda3/etc/profile.d/conda.sh"
+    "/usr/share/miniconda3/etc/profile.d/conda.sh"
+    "/usr/local/miniconda3/etc/profile.d/conda.sh"
+  )
+
+  for candidate in "${CONDA_SH_CANDIDATES[@]}"; do
+    if [ -n "${candidate:-}" ] && [ -f "$candidate" ]; then
+      # shellcheck disable=SC1090
+      source "$candidate"
+      break
+    fi
+  done
+fi
+
+if ! command -v conda >/dev/null 2>&1; then
+  cat <<'EOF'
+conda is not available in this shell.
+Try one of these before rerunning:
+  module avail | grep -i -E 'anaconda|miniconda|mamba'
+  module load <the matching conda module>
+Or set CONDA_SH to the path of conda.sh, then rerun the script.
+EOF
   exit 1
 fi
 
