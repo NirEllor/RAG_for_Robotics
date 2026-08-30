@@ -118,3 +118,15 @@ If PTv3 import fails because `torch_scatter`, `torch_sparse`, or
 
 The job uses a GPU node, forces serial compilation, and lowers compiler
 optimization to reduce peak memory during source builds.
+
+## Clean PTv3 environment
+
+If the current Python stack keeps crashing inside `spconv/cumm` during PTv3
+forward smoke tests, build a clean environment that follows the official
+Pointcept CUDA 12.4 / PyTorch 2.5 stack:
+
+1. `./slurm/run_prepare_ptv3_pointcept_env.sh`
+
+That helper creates a private conda environment, installs the Pointcept
+dependency set, and finishes with a quick import smoke test. After that, run
+the PTv3 diagnosis helper again from the new environment.
