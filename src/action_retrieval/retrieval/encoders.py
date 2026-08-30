@@ -318,6 +318,98 @@ def _strip_state_dict_prefix(state_dict: dict[str, Any], prefix: str = "module."
     return state_dict
 
 
+def _remap_state_dict_prefixes(
+    state_dict: dict[str, Any],
+    prefixes: tuple[str, ...],
+) -> dict[str, Any]:
+    """Strip any leading prefixes from each key, in order, when present."""
+
+    if not state_dict or not prefixes:
+        return state_dict
+
+    remapped: dict[str, Any] = {}
+    for key, value in state_dict.items():
+        if not isinstance(key, str):
+            remapped[key] = value
+            continue
+        new_key = key
+        changed = True
+        while changed:
+            changed = False
+            for prefix in prefixes:
+                if new_key.startswith(prefix):
+                    new_key = new_key[len(prefix) :]
+                    changed = True
+        remapped[new_key] = value
+    return remapped
+
+
+def _state_dict_alignment_summary(
+    model_state_dict: dict[str, Any],
+    checkpoint_state_dict: dict[str, Any],
+) -> dict[str, Any]:
+    model_keys = {key for key in model_state_dict.keys() if isinstance(key, str)}
+    checkpoint_keys = {key for key in checkpoint_state_dict.keys() if isinstance(key, str)}
+    shared_keys = sorted(model_keys & checkpoint_keys)
+    shape_matches = []
+    shape_mismatches = []
+    for key in shared_keys:
+        model_tensor = model_state_dict[key]
+        checkpoint_tensor = checkpoint_state_dict[key]
+        model_shape = tuple(getattr(model_tensor, "shape", ()))
+        checkpoint_shape = tuple(getattr(checkpoint_tensor, "shape", ()))
+        if model_shape == checkpoint_shape:
+            shape_matches.append(key)
+        else:
+            shape_mismatches.append((key, model_shape, checkpoint_shape))
+    return {
+        "model_key_count": len(model_keys),
+        "checkpoint_key_count": len(checkpoint_keys),
+        "shared_key_count": len(shared_keys),
+        "shape_match_count": len(shape_matches),
+        "shape_mismatch_count": len(shape_mismatches),
+        "shape_mismatches": shape_mismatches,
+    }
+
+
+def _best_state_dict_remap(
+    model_state_dict: dict[str, Any],
+    checkpoint_state_dict: dict[str, Any],
+    *,
+    candidate_prefix_sets: tuple[tuple[str, ...], ...] = (
+        (),
+        ("module.",),
+        ("backbone.",),
+        ("module.", "backbone."),
+    ),
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    best_name = "raw"
+    best_state_dict = checkpoint_state_dict
+    best_summary = _state_dict_alignment_summary(model_state_dict, checkpoint_state_dict)
+    best_score = (
+        best_summary["shape_match_count"],
+        best_summary["shared_key_count"],
+    )
+
+    for prefixes in candidate_prefix_sets:
+        if not prefixes:
+            continue
+        candidate_name = "+".join(prefixes)
+        candidate_state_dict = _remap_state_dict_prefixes(checkpoint_state_dict, prefixes)
+        summary = _state_dict_alignment_summary(model_state_dict, candidate_state_dict)
+        score = (
+            summary["shape_match_count"],
+            summary["shared_key_count"],
+        )
+        if score > best_score:
+            best_name = candidate_name
+            best_state_dict = candidate_state_dict
+            best_summary = summary
+            best_score = score
+
+    return best_name, best_state_dict, best_summary
+
+
 def _load_checkpoint(path: Path) -> Any:
     try:
         return torch.load(path, map_location="cpu", weights_only=False)
@@ -792,7 +884,14 @@ class Uni3DEncoder:
         model = create_uni3d(args)
         checkpoint = _load_checkpoint(self.checkpoint)
         state_dict = _extract_checkpoint_state_dict(checkpoint)
-        load_result = model.load_state_dict(state_dict, strict=False)
+        remap_name, remapped_state_dict, summary = _best_state_dict_remap(model.state_dict(), state_dict)
+        if remap_name != "raw":
+            warnings.warn(
+                "Uni3D checkpoint state dict remapped using "
+                f"{remap_name}; shared={summary['shared_key_count']}, "
+                f"shape_matches={summary['shape_match_count']}."
+            )
+        load_result = model.load_state_dict(remapped_state_dict, strict=False)
         missing_keys = getattr(load_result, "missing_keys", [])
         unexpected_keys = getattr(load_result, "unexpected_keys", [])
         if missing_keys or unexpected_keys:
@@ -1012,7 +1111,14 @@ class PointTransformerV3Encoder:
 
         checkpoint = _load_checkpoint(self.checkpoint)
         state_dict = _extract_checkpoint_state_dict(checkpoint)
-        load_result = model.load_state_dict(state_dict, strict=False)
+        remap_name, remapped_state_dict, summary = _best_state_dict_remap(model.state_dict(), state_dict)
+        if remap_name != "raw":
+            warnings.warn(
+                "PTv3 checkpoint state dict remapped using "
+                f"{remap_name}; shared={summary['shared_key_count']}, "
+                f"shape_matches={summary['shape_match_count']}."
+            )
+        load_result = model.load_state_dict(remapped_state_dict, strict=False)
         missing_keys = getattr(load_result, "missing_keys", [])
         unexpected_keys = getattr(load_result, "unexpected_keys", [])
         if missing_keys or unexpected_keys:
