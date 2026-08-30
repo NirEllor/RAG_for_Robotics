@@ -583,7 +583,6 @@ def _pointcept_ptv3_backbone_config(*, in_channels: int) -> dict[str, Any]:
     """Construct the Pointcept v1.5.2 PTv3 backbone config used for loading weights."""
 
     return dict(
-        type="PT-v3m1",
         in_channels=in_channels,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
