@@ -1268,6 +1268,11 @@ class PointTransformerV3Encoder:
                 _ensure_package_module("pointcept", pointcept_pkg_root)
                 _ensure_package_module("pointcept.models", pointcept_models_root)
                 pointcept_utils_module = _ensure_package_module("pointcept.models.utils", pointcept_utils_root)
+                pointcept_utils_utils_module = ModuleType("pointcept.models.utils.utils")
+                pointcept_utils_utils_module.offset2batch = _offset2batch  # type: ignore[attr-defined]
+                pointcept_utils_utils_module.batch2offset = _batch2offset  # type: ignore[attr-defined]
+                pointcept_utils_utils_module.__all__ = ["offset2batch", "batch2offset"]  # type: ignore[attr-defined]
+                sys.modules["pointcept.models.utils.utils"] = pointcept_utils_utils_module
                 pointcept_utils_module.offset2batch = _offset2batch  # type: ignore[attr-defined]
                 pointcept_utils_module.batch2offset = _batch2offset  # type: ignore[attr-defined]
                 pointcept_utils_module.__all__ = ["offset2batch", "batch2offset"]  # type: ignore[attr-defined]
