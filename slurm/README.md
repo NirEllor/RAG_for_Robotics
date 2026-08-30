@@ -128,5 +128,8 @@ Pointcept CUDA 12.4 / PyTorch 2.5 stack:
 1. `./slurm/run_prepare_ptv3_pointcept_env.sh`
 
 That helper creates a private conda environment, installs the Pointcept
-dependency set, and finishes with a quick import smoke test. After that, run
-the PTv3 diagnosis helper again from the new environment.
+dependency set when conda is available. If conda is not installed on the
+cluster shell, it falls back to `python/native` plus a private virtualenv and
+installs the same wheel-based stack there. In both cases it finishes with a
+quick import smoke test. After that, run the PTv3 diagnosis helper again from
+the new environment.
