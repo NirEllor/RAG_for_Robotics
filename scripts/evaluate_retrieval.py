@@ -17,6 +17,7 @@ from action_retrieval.evaluation.retrieval_eval import (
     per_query_to_dataframe,
     runs_to_dataframe,
 )
+from action_retrieval.retrieval.dataset import load_manifest
 
 
 def _parse_args() -> argparse.Namespace:
@@ -86,9 +87,39 @@ def _format_markdown_table(df: pd.DataFrame, *, columns: list[str]) -> str:
     return "\n".join(rows)
 
 
+def _infer_task_relevance_annotations(dataset_root: Path) -> dict[str, set[str]]:
+    manifest = load_manifest(dataset_root)
+    if "episode_id" not in manifest.columns or "task_name" not in manifest.columns:
+        raise ValueError(
+            "Cannot infer relevance annotations because the manifest is missing "
+            "'episode_id' or 'task_name' columns."
+        )
+
+    annotations: dict[str, set[str]] = {}
+    grouped = manifest.groupby("task_name", dropna=False)
+    for _, group in grouped:
+        episode_ids = [str(episode_id) for episode_id in group["episode_id"].tolist()]
+        for query_episode_id in episode_ids:
+            annotations[query_episode_id] = {
+                candidate_episode_id
+                for candidate_episode_id in episode_ids
+                if candidate_episode_id != query_episode_id
+            }
+    return annotations
+
+
 def main() -> int:
     args = _parse_args()
-    annotations = load_relevance_annotations(args.annotations)
+    if args.annotations.exists():
+        annotations = load_relevance_annotations(args.annotations)
+        annotations_source = args.annotations
+    else:
+        print(
+            f"WARNING: Missing annotations file {args.annotations}; "
+            "inferring relevance from dataset task_name groups."
+        )
+        annotations = _infer_task_relevance_annotations(args.dataset_root)
+        annotations_source = None
     runs = evaluate_retrieval_methods(
         args.dataset_root,
         annotations,
@@ -121,7 +152,7 @@ def main() -> int:
         "# Retrieval Evaluation Summary",
         "",
         f"- Dataset root: `{args.dataset_root}`",
-        f"- Annotations: `{args.annotations}`",
+        f"- Annotations: `{annotations_source or 'inferred from manifest task_name groups'}`",
         f"- Methods: {', '.join(args.methods)}",
         f"- K values: {', '.join(str(k) for k in args.ks)}",
         "",
@@ -157,7 +188,7 @@ def main() -> int:
 
     payload = {
         "dataset_root": str(args.dataset_root),
-        "annotations": str(args.annotations),
+        "annotations": str(annotations_source or "inferred from manifest task_name groups"),
         "methods": args.methods,
         "ks": args.ks,
         "summary": summary_df.to_dict(orient="records"),
@@ -169,7 +200,7 @@ def main() -> int:
     print("Retrieval Evaluation")
     print("=" * 80)
     print(f"Dataset root: {args.dataset_root}")
-    print(f"Annotations: {args.annotations}")
+    print(f"Annotations: {annotations_source or 'inferred from manifest task_name groups'}")
     print(f"Output dir: {output_dir}")
     print()
     print(summary_df.sort_values(["method", "k"]).to_string(index=False))
