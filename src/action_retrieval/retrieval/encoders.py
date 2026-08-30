@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import importlib.util
 import os
 import subprocess
@@ -1303,6 +1304,18 @@ class PointTransformerV3Encoder:
             backbone_cfg["enable_rpe"] = self.enable_rpe
             backbone_cfg["upcast_attention"] = self.upcast_attention
             backbone_cfg["upcast_softmax"] = self.upcast_softmax
+            accepted_backbone_keys = {
+                name
+                for name in inspect.signature(PointTransformerV3.__init__).parameters
+                if name != "self"
+            }
+            ignored_backbone_keys = sorted(key for key in backbone_cfg if key not in accepted_backbone_keys)
+            if ignored_backbone_keys:
+                warnings.warn(
+                    "Ignoring unsupported PTv3 backbone config keys: "
+                    f"{ignored_backbone_keys}"
+                )
+            backbone_cfg = {key: value for key, value in backbone_cfg.items() if key in accepted_backbone_keys}
             backbone = PointTransformerV3(**backbone_cfg)
 
             remap_name, remapped_state_dict, summary = _best_state_dict_remap(backbone.state_dict(), state_dict)
