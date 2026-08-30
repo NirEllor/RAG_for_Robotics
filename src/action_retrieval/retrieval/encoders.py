@@ -951,6 +951,7 @@ class PointTransformerV3Encoder:
             upcast_softmax if upcast_softmax is not None else _env_bool("PTV3_UPCAST_SOFTMAX", False)
         )
         self.device = torch.device(device or os.getenv("PTV3_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.allow_key_mismatch = _env_bool("PTV3_ALLOW_KEY_MISMATCH", False)
         env_use_real = os.getenv("PTV3_USE_REAL")
         if use_real is not None:
             self.use_real = use_real
@@ -1015,11 +1016,21 @@ class PointTransformerV3Encoder:
         missing_keys = getattr(load_result, "missing_keys", [])
         unexpected_keys = getattr(load_result, "unexpected_keys", [])
         if missing_keys or unexpected_keys:
-            warnings.warn(
+            message = (
                 "Loaded PTv3 checkpoint with a non-empty key mismatch. "
-                f"missing={len(missing_keys)}, unexpected={len(unexpected_keys)}. "
-                "The real backend is active, but you should verify the checkpoint matches the code."
+                f"missing={len(missing_keys)}, unexpected={len(unexpected_keys)}."
             )
+            if self.allow_key_mismatch:
+                warnings.warn(
+                    message
+                    + " The real backend is active, but you should verify the checkpoint matches the code."
+                )
+            else:
+                raise RuntimeError(
+                    message
+                    + " Falling back to the proxy encoder by default. "
+                    "Set PTV3_ALLOW_KEY_MISMATCH=1 if you want to try the real backend anyway."
+                )
         model.eval()
         model.to(self.device)
         return model
