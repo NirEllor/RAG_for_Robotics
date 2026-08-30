@@ -82,6 +82,11 @@ commit and warns/fails early if the code checkout does not match the expected
 release. That avoids the common failure mode of mixing a checkpoint from one
 PTv3 release with model code from another.
 
+Set `PTV3_REPO_LAYOUT=pointcept` when `PTV3_REPO_ROOT` points at a Pointcept
+checkout, or leave it as `auto` to let the loader infer the layout from the
+repo contents. The standalone `PointTransformerV3` repository still works via
+`PTV3_REPO_LAYOUT=standalone`.
+
 ## Download jobs for real checkpoints
 
 If you want the real pretrained backbones, use the download helpers first:

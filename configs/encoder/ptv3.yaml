@@ -7,9 +7,10 @@ status: REAL_BACKEND_READY
 #   1. real PTv3 loading when PTV3_REPO_ROOT + PTV3_CHECKPOINT are set
 #   2. deterministic proxy fallback when the real backend is unavailable
 #
-# To enable the real model on the cluster, point PTV3_REPO_ROOT at a cloned
-# copy of the official PTv3 codebase that matches Pointcept v1.5.2, and
-# point PTV3_CHECKPOINT at a checkpoint from the same release family.
+# To enable the real model on the cluster, point PTV3_REPO_ROOT at the cloned
+# PTv3/Pointcept codebase that matches Pointcept v1.5.2, set
+# PTV3_REPO_LAYOUT=pointcept, and point PTV3_CHECKPOINT at a checkpoint from
+# the same release family.
 #
 # The loader validates the repository tag/commit by default so we do not
 # accidentally mix code from one PTv3 release with weights from another.

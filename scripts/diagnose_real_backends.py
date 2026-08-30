@@ -173,6 +173,7 @@ def _diagnose_uni3d(device: torch.device, forward_smoke: bool, sample_count: int
     print(f"checkpoint: {encoder.checkpoint}")
     print(f"release expectation: tag={encoder.expected_release_tag!r}, commit={encoder.expected_release_commit!r}")
     print(f"release strict: {encoder.strict_release}")
+    print(f"repo layout: {encoder.repo_layout}")
     print(f"repo release summary: {_repo_release_summary(encoder.repo_root)}")
 
     checkpoint_info = _checkpoint_report(encoder.checkpoint)
@@ -218,6 +219,7 @@ def _diagnose_ptv3(device: torch.device, forward_smoke: bool, sample_count: int 
     print(f"allow_key_mismatch: {encoder.allow_key_mismatch}")
     print(f"release expectation: tag={encoder.expected_release_tag!r}, commit={encoder.expected_release_commit!r}")
     print(f"release strict: {encoder.strict_release}")
+    print(f"repo layout: {encoder.repo_layout}")
     print(f"repo release summary: {_repo_release_summary(encoder.repo_root)}")
     print(f"enable_flash: {encoder.enable_flash}")
     print(f"enable_rpe: {encoder.enable_rpe}")

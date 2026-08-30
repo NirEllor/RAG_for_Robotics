@@ -15,6 +15,7 @@ from typing import Any
 
 import numpy as np
 import torch
+import torch.nn as nn
 
 from action_retrieval.retrieval.dataset import ExportedEpisode
 
@@ -446,6 +447,18 @@ def _repo_release_summary(repo_root: Path) -> dict[str, str | bool | None]:
     }
 
 
+def _detect_ptv3_repo_layout(repo_root: Path) -> str:
+    has_pointcept_pkg = (repo_root / "pointcept").is_dir()
+    has_standalone_model = (repo_root / "model.py").is_file()
+    if has_pointcept_pkg and not has_standalone_model:
+        return "pointcept"
+    if has_standalone_model and not has_pointcept_pkg:
+        return "standalone"
+    if has_pointcept_pkg and has_standalone_model:
+        return "pointcept"
+    return "unknown"
+
+
 def _validate_ptv3_release_alignment(
     repo_root: Path,
     *,
@@ -546,6 +559,82 @@ def _load_module_from_path(module_name: str, module_path: Path, package_path: Pa
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _infer_ptv3_num_classes(state_dict: dict[str, Any], default: int = 20) -> int:
+    for key in ("seg_head.weight", "module.seg_head.weight"):
+        tensor = state_dict.get(key)
+        if isinstance(tensor, torch.Tensor) and tensor.ndim >= 1:
+            return int(tensor.shape[0])
+    return default
+
+
+def _pointcept_ptv3_model_config(*, in_channels: int, num_classes: int, config_variant: str = "scannet") -> dict[str, Any]:
+    """Construct the Pointcept v1.5.2 PTv3 config used for loading weights."""
+
+    base_backbone = dict(
+        type="PT-v3m1",
+        in_channels=in_channels,
+        order=("z", "z-trans", "hilbert", "hilbert-trans"),
+        stride=(2, 2, 2, 2),
+        enc_depths=(2, 2, 2, 6, 2),
+        enc_channels=(32, 64, 128, 256, 512),
+        enc_num_head=(2, 4, 8, 16, 32),
+        enc_patch_size=(1024, 1024, 1024, 1024, 1024),
+        dec_depths=(2, 2, 2, 2),
+        dec_channels=(64, 64, 128, 256),
+        dec_num_head=(4, 4, 8, 16),
+        dec_patch_size=(1024, 1024, 1024, 1024),
+        mlp_ratio=4,
+        qkv_bias=True,
+        qk_scale=None,
+        attn_drop=0.0,
+        proj_drop=0.0,
+        drop_path=0.3,
+        shuffle_orders=True,
+        pre_norm=True,
+        enable_rpe=False,
+        enable_flash=True,
+        upcast_attention=False,
+        upcast_softmax=False,
+        enc_mode=False,
+        pdnorm_bn=False,
+        pdnorm_ln=False,
+        pdnorm_decouple=True,
+        pdnorm_adaptive=False,
+        pdnorm_affine=True,
+        pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
+    )
+
+    return {
+        "model": dict(
+            type="DefaultSegmentorV2",
+            num_classes=num_classes,
+            backbone_out_channels=64,
+            backbone=base_backbone,
+            criteria=[
+                dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
+                dict(type="LovaszLoss", mode="multiclass", loss_weight=1.0, ignore_index=-1),
+            ],
+        ),
+        "config_variant": config_variant,
+    }
+
+
+class _PointceptPTv3FeatureAdapter(nn.Module):
+    """Wrap a Pointcept PTv3 segmentor and expose backbone features."""
+
+    def __init__(self, segmentor: nn.Module, point_type: type[Any]) -> None:
+        super().__init__()
+        self.segmentor = segmentor
+        self.point_type = point_type
+
+    def forward(self, data_dict: dict[str, Any]) -> Any:
+        point = self.point_type(data_dict)
+        backbone = getattr(self.segmentor, "backbone", None)
+        if backbone is None:
+            raise AttributeError("Pointcept segmentor does not expose a backbone attribute.")
+        return backbone(point)
 
 
 @dataclass(frozen=True)
@@ -1126,6 +1215,7 @@ class PointTransformerV3Encoder:
         self.expected_release_tag = (os.getenv("PTV3_EXPECTED_RELEASE_TAG") or "v1.5.2").strip()
         self.expected_release_commit = (os.getenv("PTV3_EXPECTED_RELEASE_COMMIT") or "ad653ee").strip()
         self.strict_release = _env_bool("PTV3_STRICT_RELEASE", False)
+        self.repo_layout = (os.getenv("PTV3_REPO_LAYOUT") or "auto").strip().lower()
         env_use_real = os.getenv("PTV3_USE_REAL")
         if use_real is not None:
             self.use_real = use_real
@@ -1153,6 +1243,72 @@ class PointTransformerV3Encoder:
             expected_commit=self.expected_release_commit,
             strict=self.strict_release,
         )
+
+        checkpoint = _load_checkpoint(self.checkpoint)
+        state_dict = _extract_checkpoint_state_dict(checkpoint)
+        layout = self.repo_layout
+        if layout == "auto":
+            layout = _detect_ptv3_repo_layout(self.repo_root)
+
+        if layout == "pointcept":
+            try:
+                sys.path.insert(0, str(self.repo_root))
+                from pointcept.models.builder import build_model  # type: ignore
+                from pointcept.models.utils.structure import Point  # type: ignore
+            except Exception as exc:
+                raise ImportError(
+                    "Could not import Pointcept PTv3 runtime from the cloned repo. "
+                    "Make sure PTV3_REPO_ROOT points to a Pointcept checkout that matches v1.5.2."
+                ) from exc
+
+            num_classes = _infer_ptv3_num_classes(state_dict, default=20)
+            pointcept_cfg = _pointcept_ptv3_model_config(
+                in_channels=self.in_channels,
+                num_classes=num_classes,
+            )["model"]
+            segmentor = build_model(pointcept_cfg)
+            remap_name, remapped_state_dict, summary = _best_state_dict_remap(segmentor.state_dict(), state_dict)
+            if remap_name != "raw":
+                warnings.warn(
+                    "PTv3 checkpoint state dict remapped using "
+                    f"{remap_name}; shared={summary['shared_key_count']}, "
+                    f"shape_matches={summary['shape_match_count']}."
+                )
+            load_result = segmentor.load_state_dict(remapped_state_dict, strict=False)
+            missing_keys = getattr(load_result, "missing_keys", [])
+            unexpected_keys = getattr(load_result, "unexpected_keys", [])
+            if missing_keys or unexpected_keys:
+                message = (
+                    "Loaded PTv3 checkpoint with a non-empty key mismatch. "
+                    f"missing={len(missing_keys)}, unexpected={len(unexpected_keys)}."
+                )
+                if self.allow_key_mismatch:
+                    warnings.warn(
+                        message
+                        + " The real backend is active, but you should verify the checkpoint matches the code."
+                    )
+                else:
+                    raise RuntimeError(
+                        message
+                        + " Falling back to the proxy encoder by default. "
+                        "Set PTV3_ALLOW_KEY_MISMATCH=1 if you want to try the real backend anyway."
+                    )
+
+            class _PointceptPTv3Adapter(nn.Module):
+                def __init__(self, segmentor: nn.Module, point_type: type[Any]) -> None:
+                    super().__init__()
+                    self.segmentor = segmentor
+                    self.point_type = point_type
+
+                def forward(self, data_dict: dict[str, Any]) -> Any:
+                    point = self.point_type(data_dict)
+                    backbone = getattr(self.segmentor, "backbone", None)
+                    if backbone is None:
+                        raise AttributeError("Pointcept segmentor does not expose a backbone attribute.")
+                    return backbone(point)
+
+            adapter = _PointceptPTv3Adapter(segmentor.eval().to(self.device), Point)
+            return adapter
 
         package_name = "_ptv3_runtime"
         _ensure_package_module(package_name, self.repo_root)
@@ -1191,8 +1347,6 @@ class PointTransformerV3Encoder:
             cls_mode=self.cls_mode,
         )
 
-        checkpoint = _load_checkpoint(self.checkpoint)
-        state_dict = _extract_checkpoint_state_dict(checkpoint)
         remap_name, remapped_state_dict, summary = _best_state_dict_remap(model.state_dict(), state_dict)
         if remap_name != "raw":
             warnings.warn(
