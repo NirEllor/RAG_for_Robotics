@@ -76,6 +76,12 @@ proxy encoders and later swapped to real checkpoints without changing the job
 shape. The main evaluation helper also includes `uni3d` and `ptv3` in its
 default method list.
 
+For PTv3 specifically, we are pinning the real backend to the Pointcept
+`v1.5.2` release family. The encoder checks the cloned repository's Git tag or
+commit and warns/fails early if the code checkout does not match the expected
+release. That avoids the common failure mode of mixing a checkpoint from one
+PTv3 release with model code from another.
+
 ## Download jobs for real checkpoints
 
 If you want the real pretrained backbones, use the download helpers first:

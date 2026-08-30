@@ -8,9 +8,11 @@ status: REAL_BACKEND_READY
 #   2. deterministic proxy fallback when the real backend is unavailable
 #
 # To enable the real model on the cluster, point PTV3_REPO_ROOT at a cloned
-# copy of the official PointTransformerV3 repository and PTV3_CHECKPOINT at
-# the model checkpoint file. The loader will then use the official
-# PointTransformerV3 class defined in model.py.
+# copy of the official PTv3 codebase that matches Pointcept v1.5.2, and
+# point PTV3_CHECKPOINT at a checkpoint from the same release family.
+#
+# The loader validates the repository tag/commit by default so we do not
+# accidentally mix code from one PTv3 release with weights from another.
 
 model_size: small
 checkpoint: null
@@ -18,4 +20,4 @@ pretrained: true
 frozen: true
 output_dim: 768
 
-note: "Use the retrieval pipeline's ptv3 encoder path; set env vars to activate the real PTv3 checkpoint."
+note: "Use the retrieval pipeline's ptv3 encoder path; set env vars to activate the real PTv3 checkpoint. Prefer Pointcept v1.5.2-compatible code and weights."

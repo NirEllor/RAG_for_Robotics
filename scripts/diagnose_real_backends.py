@@ -31,6 +31,7 @@ from action_retrieval.retrieval.encoders import (  # noqa: E402
     _best_state_dict_remap,
     _extract_checkpoint_state_dict,
     _load_checkpoint,
+    _repo_release_summary,
     _state_dict_alignment_summary,
 )
 
@@ -170,6 +171,9 @@ def _diagnose_uni3d(device: torch.device, forward_smoke: bool, sample_count: int
         raise FileNotFoundError("UNI3D_CHECKPOINT is not set.")
     print(f"repo_root: {encoder.repo_root}")
     print(f"checkpoint: {encoder.checkpoint}")
+    print(f"release expectation: tag={encoder.expected_release_tag!r}, commit={encoder.expected_release_commit!r}")
+    print(f"release strict: {encoder.strict_release}")
+    print(f"repo release summary: {_repo_release_summary(encoder.repo_root)}")
 
     checkpoint_info = _checkpoint_report(encoder.checkpoint)
     print(f"checkpoint type: {checkpoint_info['checkpoint_type']}")
@@ -212,6 +216,9 @@ def _diagnose_ptv3(device: torch.device, forward_smoke: bool, sample_count: int 
     print(f"checkpoint: {encoder.checkpoint}")
     print(f"device: {encoder.device}")
     print(f"allow_key_mismatch: {encoder.allow_key_mismatch}")
+    print(f"release expectation: tag={encoder.expected_release_tag!r}, commit={encoder.expected_release_commit!r}")
+    print(f"release strict: {encoder.strict_release}")
+    print(f"repo release summary: {_repo_release_summary(encoder.repo_root)}")
     print(f"enable_flash: {encoder.enable_flash}")
     print(f"enable_rpe: {encoder.enable_rpe}")
 

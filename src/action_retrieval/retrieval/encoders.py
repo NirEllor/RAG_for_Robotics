@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import os
+import subprocess
 import sys
 import warnings
 from dataclasses import dataclass
@@ -415,6 +416,77 @@ def _load_checkpoint(path: Path) -> Any:
         return torch.load(path, map_location="cpu", weights_only=False)
     except TypeError:
         return torch.load(path, map_location="cpu")
+
+
+def _git_command(repo_root: Path, *args: str) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repo_root), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    stdout = completed.stdout.strip()
+    return stdout or None
+
+
+def _repo_release_summary(repo_root: Path) -> dict[str, str | bool | None]:
+    git_dir = repo_root / ".git"
+    has_git = git_dir.exists()
+    tag = _git_command(repo_root, "describe", "--tags", "--exact-match", "HEAD") if has_git else None
+    commit = _git_command(repo_root, "rev-parse", "--short", "HEAD") if has_git else None
+    dirty = _git_command(repo_root, "status", "--porcelain") if has_git else None
+    return {
+        "has_git": has_git,
+        "tag": tag,
+        "commit": commit,
+        "dirty": bool(dirty),
+    }
+
+
+def _validate_ptv3_release_alignment(
+    repo_root: Path,
+    *,
+    expected_tag: str | None,
+    expected_commit: str | None,
+    strict: bool,
+) -> dict[str, str | bool | None]:
+    summary = _repo_release_summary(repo_root)
+    expected_tag = (expected_tag or "").strip() or None
+    expected_commit = (expected_commit or "").strip().lower() or None
+
+    observed_tag = summary["tag"]
+    observed_commit = summary["commit"]
+
+    tag_match = expected_tag is None or observed_tag == expected_tag
+    commit_match = expected_commit is None or (
+        observed_commit is not None and observed_commit.lower().startswith(expected_commit)
+    )
+
+    if not summary["has_git"]:
+        message = (
+            "PTv3 repo root is not a git checkout, so release alignment to "
+            f"{expected_tag or expected_commit or 'the expected release'} cannot be verified."
+        )
+        if strict:
+            raise RuntimeError(message)
+        warnings.warn(message)
+        return summary
+
+    if tag_match and commit_match:
+        return summary
+
+    message = (
+        "PTv3 release alignment check failed. "
+        f"Expected tag={expected_tag!r} or commit prefix={expected_commit!r}, "
+        f"observed tag={observed_tag!r}, commit={observed_commit!r}, dirty={summary['dirty']}."
+    )
+    if strict:
+        raise RuntimeError(message)
+    warnings.warn(message)
+    return summary
 
 
 def _env_int(name: str, default: int) -> int:
@@ -1051,6 +1123,9 @@ class PointTransformerV3Encoder:
         )
         self.device = torch.device(device or os.getenv("PTV3_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.allow_key_mismatch = _env_bool("PTV3_ALLOW_KEY_MISMATCH", False)
+        self.expected_release_tag = (os.getenv("PTV3_EXPECTED_RELEASE_TAG") or "v1.5.2").strip()
+        self.expected_release_commit = (os.getenv("PTV3_EXPECTED_RELEASE_COMMIT") or "ad653ee").strip()
+        self.strict_release = _env_bool("PTV3_STRICT_RELEASE", False)
         env_use_real = os.getenv("PTV3_USE_REAL")
         if use_real is not None:
             self.use_real = use_real
@@ -1071,6 +1146,13 @@ class PointTransformerV3Encoder:
             raise FileNotFoundError(f"PTv3 repo root does not exist: {self.repo_root}")
         if not self.checkpoint.exists():
             raise FileNotFoundError(f"PTv3 checkpoint does not exist: {self.checkpoint}")
+
+        _validate_ptv3_release_alignment(
+            self.repo_root,
+            expected_tag=self.expected_release_tag,
+            expected_commit=self.expected_release_commit,
+            strict=self.strict_release,
+        )
 
         package_name = "_ptv3_runtime"
         _ensure_package_module(package_name, self.repo_root)

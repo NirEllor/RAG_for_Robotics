@@ -23,6 +23,7 @@ CUDA_MODULE="${CUDA_MODULE:-cuda/12.9}"
 CUDA_ROOT="${CUDA_ROOT:-/usr/local/nvidia/cuda/12.9}"
 PTV3_REPO_ROOT="${PTV3_REPO_ROOT:-/cs/labs/raananf/ellorw.nir/3d_cv_dl/PointTransformerV3}"
 PTV3_CHECKPOINT="${PTV3_CHECKPOINT:-/cs/labs/raananf/ellorw.nir/3d_cv_dl/PointTransformerV3/checkpoints/scannet-semseg-pt-v3m1-0-base/scannet-semseg-pt-v3m1-0-base/model/model_best.pth}"
+PTV3_STRICT_RELEASE="${PTV3_STRICT_RELEASE:-1}"
 
 sbatch $PTV3_SMOKE_NODE_ARGS --mem=32G -c2 --time=00:30:00 \
   --mail-type=END,FAIL --mail-user="$EMAIL" \
@@ -54,6 +55,7 @@ sbatch $PTV3_SMOKE_NODE_ARGS --mem=32G -c2 --time=00:30:00 \
     export PTV3_REPO_ROOT=\"$PTV3_REPO_ROOT\" &&
     export PTV3_CHECKPOINT=\"$PTV3_CHECKPOINT\" &&
     export PTV3_USE_REAL=1 &&
+    export PTV3_STRICT_RELEASE=\"$PTV3_STRICT_RELEASE\" &&
     export PTV3_ALLOW_KEY_MISMATCH=1 &&
     export PTV3_DEVICE=cuda &&
     python3 - <<\"PY\"
