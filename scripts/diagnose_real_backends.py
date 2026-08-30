@@ -40,6 +40,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--backend", choices=["uni3d", "ptv3", "both"], default="both")
     parser.add_argument("--device", default=None, help="Torch device override, e.g. cuda or cpu.")
     parser.add_argument(
+        "--uni3d-sample-count",
+        type=int,
+        default=None,
+        help="Override the number of points sampled for the Uni3D smoke test.",
+    )
+    parser.add_argument(
+        "--ptv3-sample-count",
+        type=int,
+        default=None,
+        help="Override the number of points sampled for the PTv3 smoke test.",
+    )
+    parser.add_argument(
         "--forward-smoke",
         action="store_true",
         help="Run a tiny synthetic forward pass after loading each backend.",
@@ -92,6 +104,18 @@ def _make_uni3d_sample(sample_count: int, device: torch.device) -> torch.Tensor:
     return torch.randn(1, sample_count, 6, dtype=torch.float32, device=device)
 
 
+def _summarize_tensor(tensor: torch.Tensor) -> dict[str, Any]:
+    return {
+        "shape": tuple(tensor.shape),
+        "dtype": str(tensor.dtype),
+        "device": str(tensor.device),
+        "min": float(tensor.min().item()) if tensor.numel() else None,
+        "max": float(tensor.max().item()) if tensor.numel() else None,
+        "mean": float(tensor.float().mean().item()) if tensor.numel() else None,
+        "std": float(tensor.float().std(unbiased=False).item()) if tensor.numel() else None,
+    }
+
+
 def _attach_stage_hooks(model: torch.nn.Module, label: str) -> list[Any]:
     hooks = []
 
@@ -139,7 +163,7 @@ def _print_alignment_summary(model: torch.nn.Module, checkpoint_state_dict: dict
     }
 
 
-def _diagnose_uni3d(device: torch.device, forward_smoke: bool) -> dict[str, Any]:
+def _diagnose_uni3d(device: torch.device, forward_smoke: bool, sample_count: int | None) -> dict[str, Any]:
     _print_header("Uni3D diagnosis")
     encoder = Uni3DEncoder(use_real=True, device=str(device))
     if encoder.checkpoint is None:
@@ -160,7 +184,10 @@ def _diagnose_uni3d(device: torch.device, forward_smoke: bool) -> dict[str, Any]
     if forward_smoke:
         hooks = _attach_stage_hooks(model, "uni3d")
         try:
-            sample = _make_uni3d_sample(encoder.sample_count, device)
+            smoke_sample_count = sample_count or encoder.sample_count
+            sample = _make_uni3d_sample(smoke_sample_count, device)
+            print(f"[uni3d] smoke sample count: {smoke_sample_count}")
+            print(f"[uni3d] smoke tensor summary: {_summarize_tensor(sample)}")
             print("[uni3d] running synthetic encode_pc smoke test...", flush=True)
             with torch.inference_mode():
                 output = model.encode_pc(sample)
@@ -176,7 +203,7 @@ def _diagnose_uni3d(device: torch.device, forward_smoke: bool) -> dict[str, Any]
     return alignment
 
 
-def _diagnose_ptv3(device: torch.device, forward_smoke: bool) -> dict[str, Any]:
+def _diagnose_ptv3(device: torch.device, forward_smoke: bool, sample_count: int | None) -> dict[str, Any]:
     _print_header("PTv3 diagnosis")
     encoder = PointTransformerV3Encoder(use_real=True, device=str(device))
     if encoder.checkpoint is None:
@@ -201,7 +228,13 @@ def _diagnose_ptv3(device: torch.device, forward_smoke: bool) -> dict[str, Any]:
     if forward_smoke:
         hooks = _attach_stage_hooks(model, "ptv3")
         try:
-            sample = _make_ptv3_sample(encoder.sample_count, device)
+            smoke_sample_count = sample_count or encoder.sample_count
+            sample = _make_ptv3_sample(smoke_sample_count, device)
+            print(f"[ptv3] smoke sample count: {smoke_sample_count}")
+            print(f"[ptv3] coord summary: {_summarize_tensor(sample['coord'])}")
+            print(f"[ptv3] feat summary: {_summarize_tensor(sample['feat'])}")
+            print(f"[ptv3] batch summary: {_summarize_tensor(sample['batch'])}")
+            print(f"[ptv3] grid_size: {sample['grid_size']}")
             print("[ptv3] running synthetic forward smoke test...", flush=True)
             with torch.inference_mode():
                 output = model(sample)
@@ -236,14 +269,14 @@ def main() -> int:
 
     if args.backend in {"uni3d", "both"}:
         try:
-            report["backends"]["uni3d"] = _diagnose_uni3d(device, args.forward_smoke)
+            report["backends"]["uni3d"] = _diagnose_uni3d(device, args.forward_smoke, args.uni3d_sample_count)
         except Exception as exc:
             report["backends"]["uni3d_error"] = f"{exc.__class__.__name__}: {exc}"
             print(f"[uni3d] ERROR: {exc.__class__.__name__}: {exc}")
 
     if args.backend in {"ptv3", "both"}:
         try:
-            report["backends"]["ptv3"] = _diagnose_ptv3(device, args.forward_smoke)
+            report["backends"]["ptv3"] = _diagnose_ptv3(device, args.forward_smoke, args.ptv3_sample_count)
         except Exception as exc:
             report["backends"]["ptv3_error"] = f"{exc.__class__.__name__}: {exc}"
             print(f"[ptv3] ERROR: {exc.__class__.__name__}: {exc}")
