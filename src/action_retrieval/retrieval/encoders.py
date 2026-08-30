@@ -1263,10 +1263,12 @@ class PointTransformerV3Encoder:
         if layout == "pointcept":
             pointcept_pkg_root = self.repo_root / "pointcept"
             pointcept_models_root = pointcept_pkg_root / "models"
+            pointcept_ptv3_root = pointcept_models_root / "point_transformer_v3"
             pointcept_utils_root = pointcept_models_root / "utils"
             try:
                 _ensure_package_module("pointcept", pointcept_pkg_root)
                 _ensure_package_module("pointcept.models", pointcept_models_root)
+                _ensure_package_module("pointcept.models.point_transformer_v3", pointcept_ptv3_root)
                 pointcept_utils_module = _ensure_package_module("pointcept.models.utils", pointcept_utils_root)
                 pointcept_utils_utils_module = ModuleType("pointcept.models.utils.utils")
                 pointcept_utils_utils_module.offset2batch = _offset2batch  # type: ignore[attr-defined]
@@ -1276,6 +1278,32 @@ class PointTransformerV3Encoder:
                 pointcept_utils_module.offset2batch = _offset2batch  # type: ignore[attr-defined]
                 pointcept_utils_module.batch2offset = _batch2offset  # type: ignore[attr-defined]
                 pointcept_utils_module.__all__ = ["offset2batch", "batch2offset"]  # type: ignore[attr-defined]
+                builder_module = _load_module_from_path(
+                    "pointcept.models.builder",
+                    pointcept_models_root / "builder.py",
+                    pointcept_models_root,
+                )
+                losses_module_path = pointcept_models_root / "losses.py"
+                if losses_module_path.exists():
+                    _load_module_from_path(
+                        "pointcept.models.losses",
+                        losses_module_path,
+                        pointcept_models_root,
+                    )
+                modules_module_path = pointcept_models_root / "modules.py"
+                if modules_module_path.exists():
+                    _load_module_from_path(
+                        "pointcept.models.modules",
+                        modules_module_path,
+                        pointcept_models_root,
+                    )
+                default_module_path = pointcept_models_root / "default.py"
+                if default_module_path.exists():
+                    _load_module_from_path(
+                        "pointcept.models.default",
+                        default_module_path,
+                        pointcept_models_root,
+                    )
                 serialization_module_path = pointcept_utils_root / "serialization.py"
                 if serialization_module_path.exists():
                     _load_module_from_path(
@@ -1283,11 +1311,20 @@ class PointTransformerV3Encoder:
                         serialization_module_path,
                         pointcept_utils_root,
                     )
-                builder_module = _load_module_from_path(
-                    "pointcept.models.builder",
-                    pointcept_models_root / "builder.py",
-                    pointcept_models_root,
-                )
+                ptv3_serialization_module_path = pointcept_ptv3_root / "serialization.py"
+                if ptv3_serialization_module_path.exists():
+                    _load_module_from_path(
+                        "pointcept.models.point_transformer_v3.serialization",
+                        ptv3_serialization_module_path,
+                        pointcept_ptv3_root,
+                    )
+                ptv3_module_path = pointcept_ptv3_root / "point_transformer_v3m1_base.py"
+                if ptv3_module_path.exists():
+                    _load_module_from_path(
+                        "pointcept.models.point_transformer_v3.point_transformer_v3m1_base",
+                        ptv3_module_path,
+                        pointcept_ptv3_root,
+                    )
                 structure_module = _load_module_from_path(
                     "pointcept.models.utils.structure",
                     pointcept_utils_root / "structure.py",
