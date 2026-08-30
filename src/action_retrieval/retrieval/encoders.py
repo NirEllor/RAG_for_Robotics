@@ -301,13 +301,21 @@ def _extract_checkpoint_state_dict(checkpoint: Any) -> dict[str, Any]:
         for key in ("module", "state_dict", "model", "ema"):
             nested = checkpoint.get(key)
             if isinstance(nested, dict):
-                return nested
+                return _strip_state_dict_prefix(nested)
         if all(isinstance(key, str) for key in checkpoint.keys()):
-            return checkpoint
+            return _strip_state_dict_prefix(checkpoint)
     raise TypeError(
         "Expected a checkpoint dictionary containing a state dict under one of the keys "
         "'module', 'state_dict', 'model', or 'ema'."
     )
+
+
+def _strip_state_dict_prefix(state_dict: dict[str, Any], prefix: str = "module.") -> dict[str, Any]:
+    if not state_dict:
+        return state_dict
+    if all(isinstance(key, str) and key.startswith(prefix) for key in state_dict.keys()):
+        return {key[len(prefix) :]: value for key, value in state_dict.items()}
+    return state_dict
 
 
 def _load_checkpoint(path: Path) -> Any:
