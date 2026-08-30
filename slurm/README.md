@@ -134,6 +134,9 @@ installs the same wheel-based stack there. In both cases it finishes with a
 quick import smoke test. After that, run the PTv3 diagnosis helper again from
 the new environment.
 
+The environment also includes `pyarrow`/`fastparquet` so `pandas.read_parquet`
+can load dataset manifests without additional manual installs.
+
 To point the existing SLURM helpers at the clean PTv3 env, export:
 
 ```bash
