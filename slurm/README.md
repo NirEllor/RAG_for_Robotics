@@ -133,3 +133,12 @@ cluster shell, it falls back to `python/native` plus a private virtualenv and
 installs the same wheel-based stack there. In both cases it finishes with a
 quick import smoke test. After that, run the PTv3 diagnosis helper again from
 the new environment.
+
+To point the existing SLURM helpers at the clean PTv3 env, export:
+
+```bash
+VENV_DIR=/cs/labs/raananf/ellorw.nir/3d_cv_dl/ptv3-pointcept-env
+```
+
+before launching `run_diagnose_real_backends.sh` or any other helper that
+activates the project Python environment.

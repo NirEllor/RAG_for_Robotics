@@ -6,7 +6,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics"
-VENV_DIR="$PROJECT_ROOT/.venv"
+VENV_DIR="${VENV_DIR:-$PROJECT_ROOT/.venv}"
 
 # Keep caches private to this user, not global to the cluster.
 WORK_ROOT="/cs/labs/raananf/ellorw.nir/3d_cv_dl"
