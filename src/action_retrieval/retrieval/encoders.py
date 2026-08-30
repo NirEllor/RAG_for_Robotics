@@ -1278,30 +1278,12 @@ class PointTransformerV3Encoder:
                 pointcept_utils_module.offset2batch = _offset2batch  # type: ignore[attr-defined]
                 pointcept_utils_module.batch2offset = _batch2offset  # type: ignore[attr-defined]
                 pointcept_utils_module.__all__ = ["offset2batch", "batch2offset"]  # type: ignore[attr-defined]
-                builder_module = _load_module_from_path(
-                    "pointcept.models.builder",
-                    pointcept_models_root / "builder.py",
-                    pointcept_models_root,
-                )
-                losses_module_path = pointcept_models_root / "losses.py"
-                if losses_module_path.exists():
-                    _load_module_from_path(
-                        "pointcept.models.losses",
-                        losses_module_path,
-                        pointcept_models_root,
-                    )
+
                 modules_module_path = pointcept_models_root / "modules.py"
                 if modules_module_path.exists():
                     _load_module_from_path(
                         "pointcept.models.modules",
                         modules_module_path,
-                        pointcept_models_root,
-                    )
-                default_module_path = pointcept_models_root / "default.py"
-                if default_module_path.exists():
-                    _load_module_from_path(
-                        "pointcept.models.default",
-                        default_module_path,
                         pointcept_models_root,
                     )
                 serialization_module_path = pointcept_utils_root / "serialization.py"
@@ -1320,18 +1302,22 @@ class PointTransformerV3Encoder:
                     )
                 ptv3_module_path = pointcept_ptv3_root / "point_transformer_v3m1_base.py"
                 if ptv3_module_path.exists():
-                    _load_module_from_path(
+                    ptv3_module = _load_module_from_path(
                         "pointcept.models.point_transformer_v3.point_transformer_v3m1_base",
                         ptv3_module_path,
                         pointcept_ptv3_root,
+                    )
+                else:
+                    raise FileNotFoundError(
+                        f"Could not find Pointcept PTv3 backbone module at: {ptv3_module_path}"
                     )
                 structure_module = _load_module_from_path(
                     "pointcept.models.utils.structure",
                     pointcept_utils_root / "structure.py",
                     pointcept_utils_root,
                 )
-                build_model = getattr(builder_module, "build_model")
                 Point = getattr(structure_module, "Point")
+                PointTransformerV3 = getattr(ptv3_module, "PointTransformerV3")
                 pointcept_utils_module.Point = Point  # type: ignore[attr-defined]
             except Exception as exc:
                 raise ImportError(
@@ -1340,22 +1326,28 @@ class PointTransformerV3Encoder:
                     f"Cause: {exc.__class__.__name__}: {exc}"
                 ) from exc
 
-            num_classes = _infer_ptv3_num_classes(state_dict, default=20)
-            pointcept_cfg = _pointcept_ptv3_model_config(
+            backbone_cfg = _pointcept_ptv3_model_config(
                 in_channels=self.in_channels,
-                num_classes=num_classes,
-            )["model"]
-            segmentor = build_model(pointcept_cfg)
-            remap_name, remapped_state_dict, summary = _best_state_dict_remap(segmentor.state_dict(), state_dict)
+                num_classes=_infer_ptv3_num_classes(state_dict, default=20),
+            )["model"]["backbone"]
+            backbone_cfg["in_channels"] = self.in_channels
+            backbone_cfg["enable_flash"] = self.enable_flash
+            backbone_cfg["enable_rpe"] = self.enable_rpe
+            backbone_cfg["upcast_attention"] = self.upcast_attention
+            backbone_cfg["upcast_softmax"] = self.upcast_softmax
+            backbone = PointTransformerV3(**backbone_cfg)
+
+            remap_name, remapped_state_dict, summary = _best_state_dict_remap(backbone.state_dict(), state_dict)
             if remap_name != "raw":
                 warnings.warn(
                     "PTv3 checkpoint state dict remapped using "
                     f"{remap_name}; shared={summary['shared_key_count']}, "
                     f"shape_matches={summary['shape_match_count']}."
                 )
-            load_result = segmentor.load_state_dict(remapped_state_dict, strict=False)
-            missing_keys = getattr(load_result, "missing_keys", [])
-            unexpected_keys = getattr(load_result, "unexpected_keys", [])
+            load_result = backbone.load_state_dict(remapped_state_dict, strict=False)
+            missing_keys = list(getattr(load_result, "missing_keys", []))
+            unexpected_keys = list(getattr(load_result, "unexpected_keys", []))
+            unexpected_keys = [key for key in unexpected_keys if not key.startswith("seg_head.")]
             if missing_keys or unexpected_keys:
                 message = (
                     "Loaded PTv3 checkpoint with a non-empty key mismatch. "
@@ -1373,21 +1365,7 @@ class PointTransformerV3Encoder:
                         "Set PTV3_ALLOW_KEY_MISMATCH=1 if you want to try the real backend anyway."
                     )
 
-            class _PointceptPTv3Adapter(nn.Module):
-                def __init__(self, segmentor: nn.Module, point_type: type[Any]) -> None:
-                    super().__init__()
-                    self.segmentor = segmentor
-                    self.point_type = point_type
-
-                def forward(self, data_dict: dict[str, Any]) -> Any:
-                    point = self.point_type(data_dict)
-                    backbone = getattr(self.segmentor, "backbone", None)
-                    if backbone is None:
-                        raise AttributeError("Pointcept segmentor does not expose a backbone attribute.")
-                    return backbone(point)
-
-            adapter = _PointceptPTv3Adapter(segmentor.eval().to(self.device), Point)
-            return adapter
+            return backbone.eval().to(self.device)
 
         package_name = "_ptv3_runtime"
         _ensure_package_module(package_name, self.repo_root)
