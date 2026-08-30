@@ -579,10 +579,10 @@ def _infer_ptv3_num_classes(state_dict: dict[str, Any], default: int = 20) -> in
     return default
 
 
-def _pointcept_ptv3_model_config(*, in_channels: int, num_classes: int, config_variant: str = "scannet") -> dict[str, Any]:
-    """Construct the Pointcept v1.5.2 PTv3 config used for loading weights."""
+def _pointcept_ptv3_backbone_config(*, in_channels: int) -> dict[str, Any]:
+    """Construct the Pointcept v1.5.2 PTv3 backbone config used for loading weights."""
 
-    base_backbone = dict(
+    return dict(
         type="PT-v3m1",
         in_channels=in_channels,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
@@ -615,36 +615,6 @@ def _pointcept_ptv3_model_config(*, in_channels: int, num_classes: int, config_v
         pdnorm_affine=True,
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     )
-
-    return {
-        "model": dict(
-            type="DefaultSegmentorV2",
-            num_classes=num_classes,
-            backbone_out_channels=64,
-            backbone=base_backbone,
-            criteria=[
-                dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-                dict(type="LovaszLoss", mode="multiclass", loss_weight=1.0, ignore_index=-1),
-            ],
-        ),
-        "config_variant": config_variant,
-    }
-
-
-class _PointceptPTv3FeatureAdapter(nn.Module):
-    """Wrap a Pointcept PTv3 segmentor and expose backbone features."""
-
-    def __init__(self, segmentor: nn.Module, point_type: type[Any]) -> None:
-        super().__init__()
-        self.segmentor = segmentor
-        self.point_type = point_type
-
-    def forward(self, data_dict: dict[str, Any]) -> Any:
-        point = self.point_type(data_dict)
-        backbone = getattr(self.segmentor, "backbone", None)
-        if backbone is None:
-            raise AttributeError("Pointcept segmentor does not expose a backbone attribute.")
-        return backbone(point)
 
 
 @dataclass(frozen=True)
@@ -1326,10 +1296,9 @@ class PointTransformerV3Encoder:
                     f"Cause: {exc.__class__.__name__}: {exc}"
                 ) from exc
 
-            backbone_cfg = _pointcept_ptv3_model_config(
+            backbone_cfg = _pointcept_ptv3_backbone_config(
                 in_channels=self.in_channels,
-                num_classes=_infer_ptv3_num_classes(state_dict, default=20),
-            )["model"]["backbone"]
+            )
             backbone_cfg["in_channels"] = self.in_channels
             backbone_cfg["enable_flash"] = self.enable_flash
             backbone_cfg["enable_rpe"] = self.enable_rpe
