@@ -84,6 +84,14 @@ That wrapper evaluates `random`, `pose_descriptor`, `rgb_histogram`,
 `global_color`, `geometry_only`, `uni3d`, and `ptv3` on the subset-8 dataset
 with the current cluster-safe environment setup.
 
+For a sweep across every exported dataset root under `data/processed`, use:
+
+1. `./slurm/run_evaluate_all.sh`
+
+That wrapper iterates over each dataset root that contains a `manifest.parquet`
+file and runs the full method set on each one, using inferred task grouping
+when a dataset-specific annotations JSON is not available.
+
 For PTv3 specifically, we are pinning the real backend to the Pointcept
 `v1.5.2` release family. The encoder checks the cloned repository's Git tag or
 commit and warns/fails early if the code checkout does not match the expected
