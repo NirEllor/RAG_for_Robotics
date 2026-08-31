@@ -76,6 +76,14 @@ proxy encoders and later swapped to real checkpoints without changing the job
 shape. The main evaluation helper also includes `uni3d` and `ptv3` in its
 default method list.
 
+For a presentation-friendly full run on the subset-8 dataset, use:
+
+1. `./slurm/run_evaluate_showcase.sh`
+
+That wrapper evaluates `random`, `pose_descriptor`, `rgb_histogram`,
+`global_color`, `geometry_only`, `uni3d`, and `ptv3` on the subset-8 dataset
+with the current cluster-safe environment setup.
+
 For PTv3 specifically, we are pinning the real backend to the Pointcept
 `v1.5.2` release family. The encoder checks the cloned repository's Git tag or
 commit and warns/fails early if the code checkout does not match the expected
