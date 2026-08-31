@@ -92,6 +92,15 @@ That wrapper iterates over each dataset root that contains a `manifest.parquet`
 file and runs the full method set on each one, using inferred task grouping
 when a dataset-specific annotations JSON is not available.
 
+For a smaller subset that skips `reach_target` and focuses on simpler tasks,
+use:
+
+1. `./slurm/run_build_simple_multitask_dataset.sh`
+2. `./slurm/run_evaluate_simple_subset.sh`
+
+Those wrappers keep the simpler RLBench tasks from the multitask config and
+write to `data/processed/v2_multitask_simple` by default.
+
 For PTv3 specifically, we are pinning the real backend to the Pointcept
 `v1.5.2` release family. The encoder checks the cloned repository's Git tag or
 commit and warns/fails early if the code checkout does not match the expected
