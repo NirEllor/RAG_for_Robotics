@@ -48,6 +48,8 @@ if [ "${#DATASET_ROOTS[@]}" -eq 0 ]; then
   exit 1
 fi
 
+DATASET_ROOTS_JOINED="${DATASET_ROOTS[*]}"
+
 sbatch "${NODE_ARGS[@]}" $GPU_NODE_ARGS --mem="$EVAL_MEM_GB" -c2 --time="$EVAL_TIME" \
   --mail-type=END,FAIL --mail-user="$EMAIL" \
   --job-name="retr_eval_all" \
@@ -61,54 +63,35 @@ sbatch "${NODE_ARGS[@]}" $GPU_NODE_ARGS --mem="$EVAL_MEM_GB" -c2 --time="$EVAL_T
     export TORCH_CUDA_ARCH_LIST=\"${TORCH_CUDA_ARCH_LIST:-7.5;8.6}\" &&
     export PIP_CACHE_DIR=\"$PIP_CACHE_DIR\" HF_HOME=\"$HF_HOME\" TORCH_HOME=\"$TORCH_HOME\" TMPDIR=\"$TMP_ROOT\" TMP=\"$TMP_ROOT\" TEMP=\"$TMP_ROOT\" TORCH_EXTENSIONS_DIR=\"$TORCH_EXTENSIONS_DIR\" &&
     rm -rf \"$TORCH_EXTENSIONS_DIR\"/pointnet2_ops* \"$TORCH_EXTENSIONS_DIR\"/_ptv3_runtime* &&
-    METHODS=\"$METHODS\" KS=\"$KS\" DATASETS=\"${DATASET_ROOTS[*]}\" PROJECT_ROOT=\"$PROJECT_ROOT\" python3 - <<\"PY\"
-import os
-from pathlib import Path
-import subprocess
-import sys
-
-project_root = Path(os.environ[\"PROJECT_ROOT\"])
-dataset_roots = [Path(item) for item in os.environ[\"DATASETS\"].split()]
-methods = os.environ[\"METHODS\"].split()
-ks = os.environ[\"KS\"].split()
-output_root = project_root / \"outputs\" / \"evaluation\" / \"retrieval_all\"
-config_dir = project_root / \"configs\" / \"evaluation\"
-
-annotation_overrides = {
-    \"v1_reach_target\": config_dir / \"rlbench_reach_target_hand_labels.json\",
-}
-
-for dataset_root in dataset_roots:
-    dataset_name = dataset_root.name
-    annotations = annotation_overrides.get(dataset_name, config_dir / f\"{dataset_name}_task_labels.json\")
-    out_dir = output_root / dataset_name
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    cmd = [
-        sys.executable,
-        \"scripts/evaluate_retrieval.py\",
-        \"--dataset-root\",
-        str(dataset_root),
-        \"--annotations\",
-        str(annotations),
-        \"--methods\",
-        *methods,
-        \"--ks\",
-        *ks,
-        \"--output-dir\",
-        str(out_dir),
-    ]
-
-    print(\"=\" * 80)
-    print(f\"Running dataset: {dataset_name}\")
-    print(f\"Dataset root: {dataset_root}\")
-    print(f\"Annotations: {annotations if annotations.exists() else 'inferred from manifest task_name groups'}\")
-    print(f\"Methods: {methods}\")
-    print(f\"K values: {ks}\")
-    print(f\"Output dir: {out_dir}\")
-    print(\"Command:\")
-    print(\" \".join(cmd))
-    print(\"=\" * 80)
-    subprocess.run(cmd, check=True)
-PY
+    export DATASET_ROOTS=\"$DATASET_ROOTS_JOINED\" &&
+    export METHODS=\"$METHODS\" &&
+    export KS=\"$KS\" &&
+    export OUTPUT_ROOT=\"$OUTPUT_ROOT/evaluation/retrieval_all\" &&
+    for dataset_root in \$DATASET_ROOTS; do
+      dataset_name=\$(basename \"\$dataset_root\")
+      annotations=\"$PROJECT_ROOT/configs/evaluation/\${dataset_name}_task_labels.json\"
+      if [ \"\$dataset_name\" = \"v1_reach_target\" ]; then
+        annotations=\"$PROJECT_ROOT/configs/evaluation/rlbench_reach_target_hand_labels.json\"
+      fi
+      out_dir=\"\$OUTPUT_ROOT/\$dataset_name\"
+      mkdir -p \"\$out_dir\"
+      echo \"================================================================================\"
+      echo \"Running dataset: \$dataset_name\"
+      echo \"Dataset root: \$dataset_root\"
+      if [ -f \"\$annotations\" ]; then
+        echo \"Annotations: \$annotations\"
+      else
+        echo \"Annotations: inferred from manifest task_name groups\"
+      fi
+      echo \"Methods: \$METHODS\"
+      echo \"K values: \$KS\"
+      echo \"Output dir: \$out_dir\"
+      echo \"================================================================================\"
+      python3 scripts/evaluate_retrieval.py \
+        --dataset-root \"\$dataset_root\" \
+        --annotations \"\$annotations\" \
+        --methods \$METHODS \
+        --ks \$KS \
+        --output-dir \"\$out_dir\"
+    done
   '"
