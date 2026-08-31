@@ -92,6 +92,17 @@ That wrapper iterates over each dataset root that contains a `manifest.parquet`
 file and runs the full method set on each one, using inferred task grouping
 when a dataset-specific annotations JSON is not available.
 
+If you specifically want the most comprehensive single-dataset run, first build
+the 19-task multitask export and then evaluate it directly:
+
+1. `./slurm/run_build_multitask_full_dataset.sh`
+2. `./slurm/run_evaluate_full_multitask.sh`
+
+The full multitask export uses `configs/dataset/rlbench_multitask_full.yaml`
+and covers the 19-task task set we discussed. That is the right choice when you
+want the broadest task coverage without multiplying the run across multiple
+dataset roots.
+
 For a smaller subset that skips `reach_target` and focuses on simpler tasks,
 use:
 
@@ -100,6 +111,15 @@ use:
 
 Those wrappers keep the simpler RLBench tasks from the multitask config and
 write to `data/processed/v2_multitask_simple` by default.
+
+At the time of writing, the processed dataset roots currently present locally
+are:
+
+- `data/processed/v1_reach_target`
+- `data/processed/v2_multitask`
+
+The 19-task `v2_multitask_full` root is built on demand by the full build
+wrapper above.
 
 For PTv3 specifically, we are pinning the real backend to the Pointcept
 `v1.5.2` release family. The encoder checks the cloned repository's Git tag or
