@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import argparse
-import copy
+import gc
 import json
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
+import torch
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -89,15 +90,6 @@ def _perturb_episode(episode: ExportedEpisode, condition: str, rng: np.random.Ge
     return replace(episode, observation=observation)
 
 
-def _summary_rows(runs: list[tuple[str, str, object]]) -> list[dict[str, object]]:
-    rows = []
-    for condition, method, run in runs:
-        row = run.aggregate.to_dict()
-        row["condition"] = condition
-        rows.append(row)
-    return rows
-
-
 def main() -> int:
     args = _args()
     ks = sorted({k for k in args.ks if k > 0})
@@ -108,16 +100,15 @@ def main() -> int:
     rows = list(manifest.iterrows())
     if args.max_queries > 0:
         rows = rows[: args.max_queries]
-    episodes = [load_exported_episode(args.dataset_root, row) for _, row in rows]
     annotations = load_relevance_annotations(args.annotations) if args.annotations and args.annotations.exists() else _infer_annotations(args.dataset_root)
     rng = np.random.default_rng(args.seed)
-    candidates_by_method: dict[str, list[EpisodeEmbedding]] = {}
-    encoders = {}
+    aggregate_rows: list[dict[str, object]] = []
+    json_runs: list[dict[str, object]] = []
+
     for method in args.methods:
         print(f"[baseline] embedding clean candidates: {method}", flush=True)
         encoder = build_encoder(method, seed=args.seed)
-        encoders[method] = encoder
-        candidates_by_method[method] = [
+        candidates = [
             EpisodeEmbedding(
                 episode_id=episode.episode_id,
                 task_name=episode.task_name,
@@ -125,17 +116,12 @@ def main() -> int:
                 vector=np.asarray(encoder.encode(episode), dtype=np.float32),
                 encoder_name=getattr(encoder, "name", method),
             )
-            for episode in episodes
+            for _, row in rows
+            for episode in [load_exported_episode(args.dataset_root, row)]
         ]
 
-    all_runs = []
-    json_runs = []
-    for condition in args.conditions:
-        print(f"[condition] {condition}", flush=True)
-        perturbed = [_perturb_episode(episode, condition, rng) for episode in episodes]
-        for method in args.methods:
-            print(f"[query] {condition}/{method}", flush=True)
-            encoder = encoders[method]
+        for condition in args.conditions:
+            print(f"[condition] {condition}", flush=True)
             query_embeddings = [
                 EpisodeEmbedding(
                     episode_id=episode.episode_id,
@@ -144,9 +130,9 @@ def main() -> int:
                     vector=np.asarray(encoder.encode(episode), dtype=np.float32),
                     encoder_name=getattr(encoder, "name", method),
                 )
-                for episode in perturbed
+                for _, row in rows
+                for episode in [_perturb_episode(load_exported_episode(args.dataset_root, row), condition, rng)]
             ]
-            candidates = candidates_by_method[method]
             matches = {
                 query.episode_id: top_k_cosine(query, candidates, max(ks), exclude_query_episode=True)
                 for query in query_embeddings
@@ -155,15 +141,24 @@ def main() -> int:
 
             retrieval_run = RetrievalRunResult(embeddings=candidates, matches=matches)
             for k in ks:
-                evaluated = evaluate_retrieval_run(retrieval_run, annotations, method=method, k=k)
-                all_runs.append((condition, method, evaluated))
-                json_runs.append({"condition": condition, **evaluated.to_dict()})
+                aggregate = evaluate_retrieval_run(
+                    retrieval_run, annotations, method=method, k=k
+                ).aggregate.to_dict()
+                aggregate["condition"] = condition
+                aggregate_rows.append(aggregate)
+                json_runs.append(aggregate)
+            del query_embeddings, matches, retrieval_run
+            gc.collect()
+
+        del candidates, encoder
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    summary_rows = _summary_rows(all_runs)
     import pandas as pd
 
-    summary = pd.DataFrame(summary_rows)
+    summary = pd.DataFrame(aggregate_rows)
     summary.to_csv(args.output_dir / "summary_metrics.csv", index=False)
     payload = {
         "dataset_root": str(args.dataset_root),
@@ -171,7 +166,7 @@ def main() -> int:
         "methods": args.methods,
         "conditions": args.conditions,
         "ks": ks,
-        "num_queries": len(episodes),
+        "num_queries": len(rows),
         "runs": json_runs,
     }
     (args.output_dir / "evaluation.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -179,7 +174,7 @@ def main() -> int:
         "# Robustness Evaluation",
         "",
         f"- Dataset: `{args.dataset_root}`",
-        f"- Queries: `{len(episodes)}`",
+        f"- Queries: `{len(rows)}`",
         f"- Annotations: `{payload['annotations']}`",
         "",
         "```text",
