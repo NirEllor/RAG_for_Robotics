@@ -7,12 +7,12 @@ direction approved by Dr. Benaim:
 > provide a meaningful retrieval signal for robotic manipulation planning, and under what
 > scene variations does this signal remain reliable?
 
-Current date: August 29, 2026
+Current date: September 1, 2026
 Target deadline: September 6, 2026
 
 ## Research Status in One Sentence
 
-We now have a working retrieval-and-evaluation pipeline on the 8-task subset; the strongest current baselines are color-aware, while the remaining open question is whether a real learned 3D backbone can beat those baselines under scene variation.
+We now have a working retrieval-and-evaluation pipeline on both the 8-task subset and the full 19-task dataset; real Uni3D and Pointcept PTv3 backends have passed smoke validation, while the remaining open questions are robustness and downstream planning value.
 
 ## Where We Are Now
 
@@ -22,9 +22,10 @@ We are currently here:
 2. task-level relevance annotations for subset-8 have been generated;
 3. subset-8 retrieval evaluation has completed successfully;
 4. `reach_target` was already exported and validated as the smoke benchmark;
-5. `Uni3D` is now wired to try a real pretrained checkpoint first, with a safe proxy fallback if the cluster setup is incomplete;
-6. `Point Transformer V3` now has the same real-backend adapter path, again with proxy fallback;
-7. the current retrieval evidence is strong for color-aware baselines, but we still need the real learned 3D backbone results and robustness checks to satisfy the research question.
+5. a real pretrained Uni3D checkpoint has been loaded and passed a real-backend smoke test;
+6. a real Pointcept PTv3 checkpoint has been loaded and passed a real-backend forward smoke test;
+7. the full 19-task dataset has been exported and the unified evaluation sweep is running or ready to run;
+8. the current retrieval evidence is strong for color-aware baselines, while the remaining research work is robustness and downstream planning evaluation.
 
 ## Live Roadmap
 
@@ -34,12 +35,12 @@ We are currently here:
 | DONE | 2 | Build evaluation labels for subset-8 | Generate task-level relevance annotations from the subset manifest | A JSON annotations file exists for all subset-8 episodes |
 | DONE | 3 | Run clean retrieval evaluation on subset-8 | Evaluate `no retrieval`, `random`, `image`, `geometry`, and color-aware baselines on the same episodes/candidate sets | Results are reproducible and report Top-1 / Top-K side by side |
 | DONE | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks are distinguishable and color-aware baselines are evaluated |
-| IN PROGRESS | 5 | Make Uni3D real | Load an actual pretrained Uni3D checkpoint on the cluster and validate that the retrieval API uses it | `uni3d` runs on the official backbone instead of the handcrafted proxy |
-| IN PROGRESS | 6 | Make PTv3 real | Load an actual pretrained Point Transformer V3 checkpoint on the cluster and validate that the retrieval API uses it | `ptv3` runs on the official backbone instead of the handcrafted proxy |
-| NEXT | 7 | Re-run evaluation with learned 3D backbones | Compare learned 3D retrieval against image and hand-crafted baselines | We have fair, quantitative evidence for 3D geometric retrieval |
+| DONE | 5 | Make Uni3D real | Load and smoke-test the official pretrained Uni3D checkpoint on the cluster | `uni3d` uses the official backend without proxy fallback |
+| DONE | 6 | Make PTv3 real | Align Pointcept and the clean PyTorch/CUDA environment, then smoke-test the official PTv3 checkpoint | `ptv3` uses the official backend and completes forward |
+| IN PROGRESS | 7 | Complete full evaluation | Evaluate all 19 tasks with all baselines and both learned 3D backbones | Full-dataset CSV, JSON, and Markdown reports are complete |
 | NEXT | 8 | Robustness tests | Evaluate viewpoint change, partial occlusion, and geometry variation | We can state under which scene changes the signal remains reliable |
 | NEXT | 9 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
-| LAST | 10 | Freeze final outputs | Lock reports, figures, configs, commands, and the final comparison tables | Final results are ready to present and reproduce |
+| LAST | 10 | Freeze final outputs | Lock reports, figures, configs, commands, and final comparison tables | Final results are ready to present and reproduce |
 
 ## Recommended Near-Term Task Subset
 
@@ -65,20 +66,19 @@ for eventual breadth, but they should not block the next 8 days.
 | Aug 29-30 | Finish dataset subset-8 build and validation | Stable subset dataset root and manifest |
 | Aug 31 | Build evaluation labels and sanity-check them | Subset-8 annotations JSON |
 | Sep 1-2 | Run clean subset-8 retrieval evaluation | Tables for `random`, image, geometry, and color-aware baselines |
-| Sep 3-4 | Integrate `Uni3D` / `PTv3` | Cluster-ready learned 3D encoder path |
-| Sep 5 | Re-run evaluation and robustness checks | Learned 3D comparison and variation analysis |
+| Sep 1 | Complete full 19-task evaluation | Unified comparison across all methods |
+| Sep 2-3 | Robustness and task-level analysis | Variation analysis and per-task breakdowns |
+| Sep 4-5 | Minimal downstream planning baseline | Retrieved-trajectory evidence |
 | Sep 6 | Freeze results and write the final summary | Presentation-ready outputs and reproducible commands |
 
 ## Immediate Priority
 
 The active order is:
 
-1. finish the real Uni3D hookup and validate it on the cluster,
-2. finish the real PTv3 hookup and validate it on the cluster,
-3. repeat the evaluation with learned 3D embeddings,
-4. run the variation/robustness checks,
-5. add the minimal downstream planning baseline,
-6. freeze the final results by September 6, 2026.
+1. finish and verify the full 19-task evaluation,
+2. run the variation/robustness checks,
+3. add the minimal downstream planning baseline,
+4. freeze the final results by September 6, 2026.
 
 ## What Is Already Effectively Done
 
@@ -88,4 +88,6 @@ The active order is:
 | Evaluation labels | Done | Subset-8 annotations JSON exists. |
 | Retrieval evaluation | Done | Baselines and proxy 3D backbones have been evaluated on subset-8. |
 | Color-aware retrieval | Done | `global_color` and `rgb_histogram` are implemented and empirically strong. |
-| Uni3D/PTv3 integration | In progress | Both encoders now have real-backend adapters, each with safe proxy fallback. |
+| Uni3D/PTv3 integration | Done | Uni3D and Pointcept PTv3 real backends passed cluster smoke validation. |
+| Full 19-task dataset | Done | `v2_multitask_full` contains all 19 configured tasks and 1,804 episodes. |
+| Full unified evaluation | In progress | The all-methods sweep is running or awaiting final output verification. |
