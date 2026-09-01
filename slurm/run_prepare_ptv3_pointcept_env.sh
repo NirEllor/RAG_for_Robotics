@@ -88,7 +88,7 @@ if [ "$USE_CONDA" -eq 1 ]; then
 
   echo "Installing Pointcept/PyG dependencies..."
   conda install -y -c conda-forge \
-    h5py pyyaml tensorboard tensorboardx wandb yapf addict einops scipy \
+    h5py pyyaml tensorboard tensorboardx wandb yapf addict easydict einops scipy \
     plyfile termcolor timm ftfy regex tqdm matplotlib black open3d peft \
     pyarrow fastparquet
 
@@ -121,7 +121,7 @@ else
 
   echo "Installing Pointcept/PyPI dependencies..."
   python -m pip install \
-    h5py pyyaml tensorboard tensorboardx wandb yapf addict einops scipy \
+    h5py pyyaml tensorboard tensorboardx wandb yapf addict easydict einops scipy \
     plyfile termcolor timm ftfy regex tqdm matplotlib black open3d peft \
     pyarrow fastparquet spconv-cu124
 fi
