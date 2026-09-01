@@ -182,7 +182,9 @@ def main() -> int:
         f"- Queries: `{len(episodes)}`",
         f"- Annotations: `{payload['annotations']}`",
         "",
-        summary.to_markdown(index=False),
+        "```text",
+        summary.to_string(index=False),
+        "```",
         "",
         "Perturbations are applied to query observations only; the candidate database remains clean.",
     ]
