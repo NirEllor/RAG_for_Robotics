@@ -26,6 +26,7 @@ cd "$PROJECT_ROOT"
 python - <<'PY'
 import _cffi_backend
 import gymnasium
+import natsort
 import rlbench
 import pyrep
 print("cffi/RLBench/PyRep import preflight OK")
