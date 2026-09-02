@@ -27,8 +27,8 @@ mkdir -p "$OUTPUT_ROOT/evaluation/reproducibility"
 {
   date -Is
   hostname
-  python --version
-  python -m pip freeze
+  python3 --version
+  python3 -m pip freeze
   nvidia-smi || true
   module list 2>&1 || true
   git -C "$PROJECT_ROOT" rev-parse HEAD

@@ -140,7 +140,19 @@ MLP is not an action-generating planner and does not fine-tune Uni3D. Training
 uses 422 episodes, while held-out evaluation uses 141 test queries against 422
 train candidates, with zero train/test overlap.
 
-### 2.5 Robustness Protocol
+### 2.5 Software Environment
+
+The experiments required a larger native and scientific Python stack than the
+retrieval scripts alone. Important components were PyTorch with the validated
+CUDA build, torchvision, torch-geometric, torch-scatter, torch-sparse,
+torch-cluster, spconv-cu124, cumm, timm, open3d, pyarrow, fastparquet, scipy,
+scikit-learn, matplotlib, and easydict. The simulator pilot also required
+gymnasium, cffi, natsort, PyRep, RLBench, and CoppeliaSim. These dependencies
+are separated between `requirements.txt` and `requirements-cluster.txt`; exact
+installed versions and checkpoint hashes are recorded in the reproducibility
+artifacts.
+
+### 2.6 Robustness Protocol
 
 Robustness perturbations are applied to query observations while the candidate
 database remains clean. The tested conditions are viewpoint rotation, partial
