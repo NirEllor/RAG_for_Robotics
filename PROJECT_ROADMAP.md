@@ -39,8 +39,8 @@ We are currently here:
 | DONE | 6 | Make PTv3 real | Align Pointcept and the clean PyTorch/CUDA environment, then smoke-test the official PTv3 checkpoint | `ptv3` uses the official backend and completes forward |
 | DONE | 7 | Complete full evaluation | Evaluate all 19 tasks with all baselines and both learned 3D backbones | Full-dataset CSV, JSON, and Markdown reports are complete |
 | DONE | 8 | Robustness tests | Run the controlled query-perturbation benchmark for viewpoint, partial occlusion, and geometry noise | Subset-8 robustness outputs are complete and reproducible |
-| NEXT | 9 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
-| LAST | 10 | Freeze final outputs | Lock reports, figures, configs, commands, and final comparison tables | Final results are ready to present and reproduce |
+| IN PROGRESS | 9 | Minimal downstream planning baseline | Run the offline nearest-trajectory transfer proxy and document its limits | Retrieved trajectories are measured as downstream inputs; simulator execution remains clearly separated |
+| IN PROGRESS | 10 | Freeze final outputs | Verify the full reports, robustness outputs, proxy results, and reproducibility manifest | Final results are ready to present and reproduce |
 
 ## Recommended Near-Term Task Subset
 
@@ -78,7 +78,7 @@ The active order is:
 1. finish and verify the full 19-task evaluation,
 2. run the variation/robustness checks,
 3. add the minimal downstream planning baseline,
-4. freeze the final results by September 6, 2026.
+4. run the downstream transfer proxy and freeze the final results by September 6, 2026.
 
 ## What Is Already Effectively Done
 
