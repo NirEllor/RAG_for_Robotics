@@ -18,7 +18,7 @@ OUTPUT_DIR="${ACTION_HEAD_EVAL_OUTPUT_DIR:-$WORK_ROOT/RAG_for_Robotics_outputs/e
 QUERY_SPLIT="${ACTION_HEAD_QUERY_SPLIT:-all}"
 CANDIDATE_SPLIT="${ACTION_HEAD_CANDIDATE_SPLIT:-all}"
 BASELINE_ARGS=()
-if [ -f "$BASELINE" ] && [ "$QUERY_SPLIT" = "all" ] && [ "$CANDIDATE_SPLIT" = "all" ]; then
+if [ -f "$BASELINE" ]; then
   BASELINE_ARGS=(--baseline-summary "$BASELINE")
 fi
 
