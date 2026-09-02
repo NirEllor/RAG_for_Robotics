@@ -21,8 +21,9 @@ fi
 source "$VENV_DIR/bin/activate"
 export COPPELIASIM_ROOT="${COPPELIASIM_ROOT:-$WORK_ROOT/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04}"
 export LD_LIBRARY_PATH="$COPPELIASIM_ROOT:${LD_LIBRARY_PATH:-}"
+export PYTHONPATH="$PROJECT_ROOT/src:$PROJECT_ROOT/third_party/RLBench:$PROJECT_ROOT/third_party/PyRep:${PYTHONPATH:-}"
 cd "$PROJECT_ROOT"
-PYTHONPATH=src python scripts/run_rlbench_planning_pilot.py \
+python scripts/run_rlbench_planning_pilot.py \
   --dataset-root "$DATASET_ROOT" \
   --task "${PLANNING_TASK:-reach_target}" \
   --episodes "${PLANNING_EPISODES:-5}" \
