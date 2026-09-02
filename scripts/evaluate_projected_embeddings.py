@@ -74,13 +74,13 @@ def main() -> int:
     ]
     summary = runs_to_dataframe(evaluated)
     detail = per_query_to_dataframe(evaluated)
-    # Keep the aggregate aligned with the auditable per-query ground truth.
-    # This also catches stale summaries produced by an older evaluator build.
-    for k in sorted(set(args.ks)):
-        mask = detail["k"] == k
-        if mask.any():
-            recomputed = float(detail.loc[mask, "top1_correct"].mean())
-            summary.loc[summary["k"] == k, "top1_accuracy"] = recomputed
+    # Top-1 accuracy is invariant to the reported K. Derive it from the
+    # audited K=1 precision column so stale aggregate fields cannot leak into
+    # the comparison table.
+    top1_rows = detail[detail["k"] == 1]
+    if not top1_rows.empty:
+        top1_accuracy = float(top1_rows["precision_at_k"].mean())
+        summary["top1_accuracy"] = top1_accuracy
     baseline = pd.read_csv(args.baseline_summary)
     baseline = baseline[baseline["method"].astype(str).str.lower() == "uni3d"].copy()
     baseline["comparison_method"] = "uni3d_original"
