@@ -31,6 +31,11 @@ def _args() -> argparse.Namespace:
     parser.add_argument("--variation", type=int, default=0)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--execute", action="store_true", help="Actually launch CoppeliaSim/RLBench.")
+    parser.add_argument(
+        "--allow-derived-actions",
+        action="store_true",
+        help="Allow joint-position states to be replayed as position targets; not ground-truth actions.",
+    )
     return parser.parse_args()
 
 
@@ -66,6 +71,7 @@ def main() -> int:
         "episodes_requested": args.episodes,
         "episodes_checked": len(records),
         "execute": args.execute,
+        "allow_derived_actions": args.allow_derived_actions,
         "records": records,
         "evaluation_type": "rlbench_trajectory_replay_pilot",
         "warning": "Replay is not a learned planner. Derived joint-position replay is not ground-truth action replay.",
@@ -92,9 +98,15 @@ def main() -> int:
             task = env.get_task(task_class)
             task.set_variation(args.variation)
             for record, (_, row) in zip(records, rows.iterrows()):
-                actions, source = _trajectory_actions(args.dataset_root / str(row["trajectory_path"]), allow_derived=True)
-                if source != "explicit_action":
-                    raise RuntimeError("Refusing simulator execution without explicit joint_position_action arrays.")
+                actions, source = _trajectory_actions(
+                    args.dataset_root / str(row["trajectory_path"]),
+                    allow_derived=args.allow_derived_actions,
+                )
+                if source != "explicit_action" and not args.allow_derived_actions:
+                    raise RuntimeError(
+                        "Refusing simulator execution without explicit joint_position_action arrays. "
+                        "Use --allow-derived-actions only for the clearly labeled replay pilot."
+                    )
                 task.reset()
                 reward = 0.0
                 for action in actions if actions is not None else []:
@@ -115,8 +127,8 @@ def main() -> int:
         "# RLBench Planning Pilot\n\n"
         f"- Task: `{args.task}`\n- Executed: `{args.execute}`\n"
         f"- Episodes checked: `{len(records)}`\n\n"
-        "This is a small trajectory-replay execution pilot. It must not be reported as a general "
-        "planning-policy benchmark.\n",
+        "This is a small trajectory-replay execution pilot. Derived joint-position replay is "
+        "not a general planning-policy benchmark.\n",
         encoding="utf-8",
     )
     print(f"Planning pilot outputs written to: {args.output_dir}")
