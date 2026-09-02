@@ -13,6 +13,7 @@ from typing import Any, Mapping, Sequence
 
 
 def _utc_now() -> str:
+    """Implement the _utc_now operation used by this module."""
     return datetime.now(timezone.utc).isoformat()
 
 
@@ -48,6 +49,7 @@ class EpisodeRecord:
     generated_at_utc: str = field(default_factory=_utc_now)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation."""
         data = asdict(self)
         data["language_descriptions"] = list(self.language_descriptions)
         data["camera_names"] = list(self.camera_names)
@@ -88,6 +90,7 @@ class DatasetMetadata:
     extra: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation."""
         data = asdict(self)
         data["camera_names"] = list(self.camera_names)
         data["image_size"] = list(self.image_size)
@@ -107,6 +110,7 @@ class DatasetBuildResult:
     exported_episode_ids: Sequence[str] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation."""
         return {
             "dataset_root": self.dataset_root,
             "metadata_path": self.metadata_path,

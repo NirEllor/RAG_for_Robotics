@@ -4,18 +4,18 @@ This checklist maps the current project state to the submission requirements.
 
 | Requirement | Status | Evidence / remaining work |
 | --- | --- | --- |
-| Proposal | PARTIAL | The research question, hypotheses, scope, and plan are documented in `3d_retrieval_experiment_infrastructure_spec.md`; a polished proposal section still needs to be included in the final PDF. |
-| Introduction and Related Work | TODO | The final PDF still needs a literature discussion with citations for retrieval-augmented planning, RLBench, Uni3D, Pointcept/PTv3, and image-based retrieval. |
-| Method | PARTIAL | The implementation specification and API guide document the pipeline; the final PDF still needs a formal method description, preprocessing details, checkpoint details, projection-head definition, and limitations. |
-| Evaluation and Results | PARTIAL | Full 19-task retrieval, subset-8 retrieval, and subset-8 robustness outputs exist. The final PDF still needs tables, figures, per-task analysis, and scientific discussion. |
-| Conclusion | TODO | Must summarize the result, negative findings, limitations, and future work without overstating the offline proxy. |
+| Proposal | DONE | Research question, hypothesis, scope, and completed-vs-planned deliverables are stated in `FINAL_REPORT.md`. |
+| Introduction and Related Work | DONE | `FINAL_REPORT.md` includes cited discussion of retrieval-augmented robotics, RLBench, robomimic, MimicGen, Uni3D, and PTv3. |
+| Method | DONE | The PDF describes data, encoders, metrics, perturbations, projection head, environment, and implementation ownership. |
+| Evaluation and Results | DONE | Full 19-task retrieval, subset-8 retrieval, robustness, held-out projection-head evaluation, downstream proxy, tables, figures, and limitations are included. |
+| Conclusion | DONE | The report summarizes findings, negative results, limitations, and future work without overstating replay as planning. |
 | Implementation | DONE | Code, tests, `requirements.txt`, configuration files, SLURM helpers, and API documentation are present. |
-| Reproducibility README | PARTIAL | Reproduction scripts exist; `ENVIRONMENT_REPRODUCTION.md` now documents the validated Cluster stack, but the actual Cluster snapshot still needs to be copied into the results package. |
+| Reproducibility README | DONE | `README.md`, `ENVIRONMENT_REPRODUCTION.md`, `requirements.txt`, `requirements-cluster.txt`, SLURM scripts, checkpoint hashes, and dataset metadata document reproduction. |
 | Real Uni3D backend | DONE | Official checkpoint loaded and passed real-backend smoke validation. |
 | Real PTv3 backend | DONE | Pointcept `v1.5.2` runtime and checkpoint passed real-backend forward smoke validation. |
 | Downstream planning | PARTIAL | Offline trajectory-transfer proxy is complete. A guarded simulator replay pilot exists, but true learned-planner success is not yet measured and must be described explicitly as a limitation. |
 | Action-aware projection head | OPTIONAL | A frozen-backbone trajectory-signature regression pilot is implemented; it should be included only if trained and evaluated with a clean split. |
-| Final PDF | TODO | A final PDF document with the required sections has not yet been produced in this repository. |
+| Final PDF | DONE | `FINAL_REPORT.pdf` is generated from `FINAL_REPORT.md`; the source builder is `scripts/build_final_report_pdf.py`. |
 
 ## Current Result Locations
 

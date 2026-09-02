@@ -21,6 +21,7 @@ from action_retrieval.retrieval.dataset import load_manifest
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--dataset-root",
@@ -73,6 +74,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _format_markdown_table(df: pd.DataFrame, *, columns: list[str]) -> str:
+    """Implement the _format_markdown_table operation used by this module."""
     rows = []
     header = "| " + " | ".join(columns) + " |"
     separator = "| " + " | ".join(["---"] * len(columns)) + " |"
@@ -90,6 +92,7 @@ def _format_markdown_table(df: pd.DataFrame, *, columns: list[str]) -> str:
 
 
 def _infer_task_relevance_annotations(dataset_root: Path) -> dict[str, set[str]]:
+    """Infer the requested value from available inputs."""
     manifest = load_manifest(dataset_root)
     if "episode_id" not in manifest.columns or "task_name" not in manifest.columns:
         raise ValueError(
@@ -111,6 +114,7 @@ def _infer_task_relevance_annotations(dataset_root: Path) -> dict[str, set[str]]
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
     if args.annotations.exists():
         annotations = load_relevance_annotations(args.annotations)

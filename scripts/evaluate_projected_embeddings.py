@@ -27,6 +27,7 @@ from action_retrieval.retrieval.ranking import top_k_cosine
 
 
 def _args() -> argparse.Namespace:
+    """Implement the _args operation used by this module."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--projected-embeddings", type=Path, required=True)
@@ -40,6 +41,7 @@ def _args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _args()
     manifest = load_manifest(args.dataset_root)
     manifest_by_id = {str(row.episode_id): row for row in manifest.itertuples()}

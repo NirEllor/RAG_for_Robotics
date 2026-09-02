@@ -32,6 +32,7 @@ class SourceInventory:
     tasks: tuple[TaskInventory, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
         return {
             "source_root": self.source_root,
             "tasks_root": self.tasks_root,
@@ -93,6 +94,7 @@ def discover_saved_demo_roots(search_dirs: Iterable[Path]) -> list[Path]:
 
 
 def _count_episode_dirs(variation_root: Path) -> tuple[int, tuple[str, ...]]:
+    """Implement the _count_episode_dirs operation used by this module."""
     episodes_root = variation_root / "episodes"
     if not episodes_root.exists():
         return 0, tuple()

@@ -19,6 +19,7 @@ from action_retrieval.simulation.saved_importer import load_saved_task_demo_batc
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--config",
@@ -64,6 +65,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _task_cfg_value(task_cfg, key: str, default=None):
+    """Implement the _task_cfg_value operation used by this module."""
     if hasattr(task_cfg, key):
         value = getattr(task_cfg, key)
         return default if value is None else value
@@ -73,10 +75,12 @@ def _task_cfg_value(task_cfg, key: str, default=None):
 
 
 def _log(message: str) -> None:
+    """Implement the _log operation used by this module."""
     print(message, flush=True)
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
     cfg = OmegaConf.load(args.config)
 

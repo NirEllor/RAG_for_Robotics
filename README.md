@@ -6,6 +6,8 @@ under viewpoint, appearance, noise, and partial-observation changes?
 
 **Status:** dataset ingestion, real-backend retrieval evaluation, robustness testing, and offline downstream transfer are complete; final report packaging is in progress.
 
+**Repository:** [github.com/NirEllor/RAG_for_Robotics](https://github.com/NirEllor/RAG_for_Robotics)
+
 ## Quick Start
 
 See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. The specification is in
@@ -17,6 +19,18 @@ See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. 
 2. For Uni3D/PTv3 cluster evaluation, use `slurm/run_prepare_ptv3_pointcept_env.sh` and the clean Pointcept environment described in `slurm/README.md`.
 3. Use the full-dataset and robustness SLURM wrappers to reproduce the locked experiments.
 4. See [ENVIRONMENT_REPRODUCTION.md](ENVIRONMENT_REPRODUCTION.md) for the validated CUDA/PyTorch stack and asset paths.
+
+### Build the Final PDF
+
+After installing `requirements.txt`, regenerate the submission document with:
+
+```bash
+python3 scripts/build_final_report_pdf.py
+```
+
+This reads `FINAL_REPORT.md`, embeds the exported report figures when present,
+and writes both `output/pdf/FINAL_REPORT.pdf` and the submission copy
+`FINAL_REPORT.pdf`.
 
 ### For Developers / Future Claude Sessions
 

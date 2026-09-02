@@ -25,6 +25,7 @@ from action_retrieval.retrieval.pipeline import embed_episodes
 
 
 def _args() -> argparse.Namespace:
+    """Implement the _args operation used by this module."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--encoder", default="uni3d")
@@ -39,6 +40,7 @@ def _args() -> argparse.Namespace:
 
 
 def _trajectory_signature(trajectory: dict[str, np.ndarray]) -> tuple[np.ndarray, str] | None:
+    """Implement the _trajectory_signature operation used by this module."""
     for key in ("joint_position_action", "gripper_pose", "joint_positions"):
         value = trajectory.get(key)
         if value is None:
@@ -59,6 +61,7 @@ def _trajectory_signature(trajectory: dict[str, np.ndarray]) -> tuple[np.ndarray
 
 class ProjectionHead(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, projection_dim: int, target_dim: int):
+        """Initialize this component."""
         super().__init__()
         self.project = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -69,11 +72,13 @@ class ProjectionHead(nn.Module):
         self.predict = nn.Linear(projection_dim, target_dim)
 
     def forward(self, value: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Run a forward pass through the component."""
         projected = nn.functional.normalize(self.project(value), dim=-1)
         return projected, self.predict(projected)
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _args()
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)

@@ -29,6 +29,7 @@ class RetrievalQueryMetrics:
     topk_episode_ids: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
         data = asdict(self)
         data["topk_scores"] = list(self.topk_scores)
         data["topk_episode_ids"] = list(self.topk_episode_ids)
@@ -52,10 +53,12 @@ class RetrievalAggregateMetrics:
     hit_rate_at_k: float
 
     def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
         return asdict(self)
 
 
 def precision_at_k(relevant_flags: Sequence[int | bool], k: int) -> float:
+    """Implement the precision_at_k operation used by this module."""
     if k <= 0:
         return 0.0
     retrieved = list(relevant_flags)[:k]
@@ -65,6 +68,7 @@ def precision_at_k(relevant_flags: Sequence[int | bool], k: int) -> float:
 
 
 def recall_at_k(relevant_flags: Sequence[int | bool], total_relevant: int, k: int) -> float:
+    """Implement the recall_at_k operation used by this module."""
     if total_relevant <= 0:
         return 0.0
     retrieved = list(relevant_flags)[:k]
@@ -72,6 +76,7 @@ def recall_at_k(relevant_flags: Sequence[int | bool], total_relevant: int, k: in
 
 
 def mean_reciprocal_rank(relevant_flags: Sequence[int | bool]) -> float:
+    """Implement the mean_reciprocal_rank operation used by this module."""
     for index, flag in enumerate(relevant_flags, start=1):
         if bool(flag):
             return 1.0 / float(index)
@@ -83,6 +88,7 @@ def average_precision_at_k(
     total_relevant: int,
     k: int,
 ) -> float:
+    """Implement the average_precision_at_k operation used by this module."""
     flags = np.asarray(list(relevant_flags)[:k], dtype=np.float32)
     if flags.size == 0:
         return 0.0
@@ -98,6 +104,7 @@ def average_precision_at_k(
 
 
 def discounted_cumulative_gain(relevant_flags: Sequence[int | bool], k: int) -> float:
+    """Implement the discounted_cumulative_gain operation used by this module."""
     flags = np.asarray(list(relevant_flags)[:k], dtype=np.float32)
     if flags.size == 0:
         return 0.0
@@ -111,6 +118,7 @@ def normalized_discounted_cumulative_gain(
     total_relevant: int,
     k: int,
 ) -> float:
+    """Implement the normalized_discounted_cumulative_gain operation used by this module."""
     flags = list(relevant_flags)[:k]
     if not flags:
         return 0.0

@@ -6,6 +6,7 @@ import numpy as np
 
 
 def _as_float32(array) -> np.ndarray:
+    """Implement the _as_float32 operation used by this module."""
     return np.asarray(array, dtype=np.float32)
 
 

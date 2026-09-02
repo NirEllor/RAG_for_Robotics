@@ -10,6 +10,8 @@ scipy>=1.7
 scikit-learn>=1.0
 matplotlib>=3.4
 Pillow>=8.0
+reportlab>=4.0
+pypdf>=4.0
 pytest>=6.2
 
 # Optional dependencies (install with pip install -e ".[faiss,3d,dev]")

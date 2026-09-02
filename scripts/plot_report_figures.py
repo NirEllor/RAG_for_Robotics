@@ -19,6 +19,7 @@ DEFAULT_OUT = Path("report_figures")
 
 
 def _read(path: Path) -> pd.DataFrame | None:
+    """Implement the _read operation used by this module."""
     if not path.exists():
         print(f"[skip] missing: {path}")
         return None
@@ -28,6 +29,7 @@ def _read(path: Path) -> pd.DataFrame | None:
 
 
 def _save(fig: plt.Figure, output: Path, name: str) -> None:
+    """Persist the requested artifact."""
     fig.tight_layout()
     fig.savefig(output / f"{name}.png", dpi=220, bbox_inches="tight")
     fig.savefig(output / f"{name}.svg", bbox_inches="tight")
@@ -35,6 +37,7 @@ def _save(fig: plt.Figure, output: Path, name: str) -> None:
 
 
 def plot_retrieval(frame: pd.DataFrame, output: Path, title: str, name: str) -> None:
+    """Implement the plot_retrieval operation used by this module."""
     data = frame[frame["k"] == 1].copy()
     data = data.sort_values("top1_accuracy", ascending=True)
     fig, ax = plt.subplots(figsize=(9, 5.2))
@@ -49,6 +52,7 @@ def plot_retrieval(frame: pd.DataFrame, output: Path, title: str, name: str) -> 
 
 
 def plot_retrieval_by_k(frame: pd.DataFrame, output: Path, title: str, name: str) -> None:
+    """Implement the plot_retrieval_by_k operation used by this module."""
     fig, ax = plt.subplots(figsize=(9, 5.2))
     for method, group in frame.groupby("method", sort=True):
         group = group.sort_values("k")
@@ -64,6 +68,7 @@ def plot_retrieval_by_k(frame: pd.DataFrame, output: Path, title: str, name: str
 
 
 def plot_robustness(frame: pd.DataFrame, output: Path) -> None:
+    """Implement the plot_robustness operation used by this module."""
     data = frame[frame["k"] == 1].copy()
     pivot = data.pivot(index="method", columns="condition", values="hit_rate_at_k")
     conditions = [column for column in ("clean", "viewpoint", "occlusion", "geometry_noise") if column in pivot]
@@ -83,6 +88,7 @@ def plot_robustness(frame: pd.DataFrame, output: Path) -> None:
 
 
 def plot_heldout(action: pd.DataFrame, baseline: pd.DataFrame, output: Path) -> None:
+    """Implement the plot_heldout operation used by this module."""
     rows = []
     for label, frame in (("Uni3D original", baseline), ("Uni3D action head", action)):
         row = frame[frame["k"] == 1].iloc[0]
@@ -100,6 +106,7 @@ def plot_heldout(action: pd.DataFrame, baseline: pd.DataFrame, output: Path) -> 
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evaluation-root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUT)

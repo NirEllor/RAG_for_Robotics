@@ -152,3 +152,14 @@ Thumbs.db
 
 # Git merge files
 *.orig
+
+# Local result bundles and generated report intermediates
+output/
+graphify-out/
+eval_dataset_metadata/
+RAG_for_Robotics/
+RAG_for_Robotics_outputs/
+*_results.tar.gz
+report_figures.tar.gz
+*.tar.gz
+Final_Project___*.pdf

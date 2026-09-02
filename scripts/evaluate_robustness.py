@@ -31,6 +31,7 @@ from action_retrieval.retrieval.encoders import EpisodeEmbedding  # noqa: E402
 
 
 def _args() -> argparse.Namespace:
+    """Implement the _args operation used by this module."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--annotations", type=Path)
@@ -46,6 +47,7 @@ def _args() -> argparse.Namespace:
 
 
 def _infer_annotations(dataset_root: Path) -> dict[str, set[str]]:
+    """Infer the requested value from available inputs."""
     manifest = load_manifest(dataset_root)
     annotations: dict[str, set[str]] = {}
     for _, group in manifest.groupby("task_name", dropna=False):
@@ -56,10 +58,12 @@ def _infer_annotations(dataset_root: Path) -> dict[str, set[str]]:
 
 
 def _point_cloud_keys(observation: dict[str, np.ndarray]) -> list[str]:
+    """Implement the _point_cloud_keys operation used by this module."""
     return [key for key in ("front_point_cloud_world", "front_point_cloud_camera") if key in observation]
 
 
 def _perturb_episode(episode: ExportedEpisode, condition: str, rng: np.random.Generator) -> ExportedEpisode:
+    """Implement the _perturb_episode operation used by this module."""
     observation = {key: np.array(value, copy=True) for key, value in episode.observation.items()}
     point_keys = _point_cloud_keys(observation)
 
@@ -91,6 +95,7 @@ def _perturb_episode(episode: ExportedEpisode, condition: str, rng: np.random.Ge
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _args()
     ks = sorted({k for k in args.ks if k > 0})
     if not ks:

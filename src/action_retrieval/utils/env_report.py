@@ -20,6 +20,7 @@ class EnvironmentInfo:
     """Container for reproducibility metadata."""
     def __init__(self, os_name: str, os_release: str, platform_machine: str,
                  python_version: str, python_executable: str, **kwargs):
+        """Initialize this component."""
         self.os_name = os_name
         self.os_release = os_release
         self.platform_machine = platform_machine

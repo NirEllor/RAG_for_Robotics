@@ -24,6 +24,7 @@ TASK_CLASSES = {
 
 
 def _args() -> argparse.Namespace:
+    """Implement the _args operation used by this module."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--task", choices=sorted(TASK_CLASSES), default="reach_target")
@@ -40,6 +41,7 @@ def _args() -> argparse.Namespace:
 
 
 def _trajectory_actions(path: Path, *, allow_derived: bool = False) -> tuple[np.ndarray | None, str]:
+    """Implement the _trajectory_actions operation used by this module."""
     with np.load(path) as payload:
         if "joint_position_action" in payload.files and payload["joint_position_action"].size:
             return np.asarray(payload["joint_position_action"], dtype=np.float32), "explicit_action"
@@ -53,6 +55,7 @@ def _trajectory_actions(path: Path, *, allow_derived: bool = False) -> tuple[np.
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _args()
     manifest = pd.read_parquet(args.dataset_root / "manifest.parquet")
     rows = manifest[manifest["task_name"].astype(str) == args.task].head(args.episodes)

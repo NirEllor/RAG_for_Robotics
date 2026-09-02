@@ -14,6 +14,7 @@ class ReachTargetDemoSource:
 
 
 def build_reach_target_observation_config():
+    """Implement the build_reach_target_observation_config operation used by this module."""
     from rlbench.observation_config import CameraConfig, ObservationConfig
 
     front_camera = CameraConfig(rgb=True, depth=True, point_cloud=True, mask=False, image_size=(128, 128))

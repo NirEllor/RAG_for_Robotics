@@ -22,10 +22,12 @@ from action_retrieval.retrieval.dataset import ExportedEpisode
 
 
 def _as_float32(array: Any) -> np.ndarray:
+    """Implement the _as_float32 operation used by this module."""
     return np.asarray(array, dtype=np.float32)
 
 
 def _safe_stats(array: Any) -> tuple[np.ndarray, np.ndarray]:
+    """Implement the _safe_stats operation used by this module."""
     arr = _as_float32(array)
     if arr.size == 0:
         return np.zeros((1,), dtype=np.float32), np.zeros((1,), dtype=np.float32)
@@ -34,6 +36,7 @@ def _safe_stats(array: Any) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _color_histogram(rgb: np.ndarray, bins: int = 8) -> np.ndarray:
+    """Implement the _color_histogram operation used by this module."""
     flat = _as_float32(rgb).reshape(-1, 3)
     flat = np.clip(flat, 0.0, 1.0)
     hist_parts: list[np.ndarray] = []
@@ -44,6 +47,7 @@ def _color_histogram(rgb: np.ndarray, bins: int = 8) -> np.ndarray:
 
 
 def _saturated_pixels(rgb: np.ndarray, saturation_threshold: float = 0.12) -> np.ndarray:
+    """Implement the _saturated_pixels operation used by this module."""
     flat = _as_float32(rgb).reshape(-1, 3)
     flat = np.clip(flat, 0.0, 1.0)
     chroma = flat.max(axis=1) - flat.min(axis=1)
@@ -54,6 +58,7 @@ def _saturated_pixels(rgb: np.ndarray, saturation_threshold: float = 0.12) -> np
 
 
 def _center_crop(rgb: np.ndarray, crop_fraction: float = 0.5) -> np.ndarray:
+    """Implement the _center_crop operation used by this module."""
     image = _as_float32(rgb)
     if image.ndim != 3 or image.shape[-1] != 3:
         return image
@@ -94,6 +99,7 @@ def _rgb_local_features(rgb: np.ndarray) -> list[np.ndarray]:
 
 
 def _pad_or_trim(array: np.ndarray, length: int) -> np.ndarray:
+    """Implement the _pad_or_trim operation used by this module."""
     arr = np.asarray(array, dtype=np.float32).reshape(-1)
     if arr.size >= length:
         return arr[:length]
@@ -103,6 +109,7 @@ def _pad_or_trim(array: np.ndarray, length: int) -> np.ndarray:
 
 
 def _normalize(vector: np.ndarray) -> np.ndarray:
+    """Normalize the input into the project representation."""
     norm = float(np.linalg.norm(vector))
     if norm == 0.0:
         return vector.astype(np.float32)
@@ -110,6 +117,7 @@ def _normalize(vector: np.ndarray) -> np.ndarray:
 
 
 def _primary_point_cloud_points(episode: ExportedEpisode) -> np.ndarray | None:
+    """Implement the _primary_point_cloud_points operation used by this module."""
     observation = episode.observation
     for key in ("front_point_cloud_world", "front_point_cloud_camera"):
         point_cloud = observation.get(key)
@@ -126,6 +134,7 @@ def _primary_point_cloud_points(episode: ExportedEpisode) -> np.ndarray | None:
 
 
 def _primary_xyzrgb_points(episode: ExportedEpisode) -> np.ndarray | None:
+    """Implement the _primary_xyzrgb_points operation used by this module."""
     observation = episode.observation
     point_cloud = None
     for key in ("front_point_cloud_world", "front_point_cloud_camera"):
@@ -164,6 +173,7 @@ def _primary_xyzrgb_points(episode: ExportedEpisode) -> np.ndarray | None:
 
 
 def _normalize_point_cloud(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+    """Normalize the input into the project representation."""
     centroid = points.mean(axis=0)
     centered = points - centroid
     scale = float(np.linalg.norm(centered, axis=1).max(initial=1.0))
@@ -174,6 +184,7 @@ def _normalize_point_cloud(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, 
 
 
 def _ordered_point_indices(normalized_points: np.ndarray, *, mode: str) -> np.ndarray:
+    """Implement the _ordered_point_indices operation used by this module."""
     if normalized_points.size == 0:
         return np.empty((0,), dtype=np.int64)
 
@@ -210,6 +221,7 @@ def _ordered_point_indices(normalized_points: np.ndarray, *, mode: str) -> np.nd
 
 
 def _sample_ordered_points(points: np.ndarray, *, sample_count: int) -> np.ndarray:
+    """Implement the _sample_ordered_points operation used by this module."""
     if points.size == 0:
         return np.zeros((sample_count, 3), dtype=np.float32)
 
@@ -227,6 +239,7 @@ def _build_point_cloud_backbone_embedding(
     variant: str,
     sample_count: int = 128,
 ) -> np.ndarray:
+    """Build the requested project object."""
     points = _primary_point_cloud_points(episode)
     if points is None:
         return np.zeros((sample_count * 6,), dtype=np.float32)
@@ -281,6 +294,7 @@ def _build_point_cloud_backbone_embedding(
 
 
 def _sample_xyzrgb_points(xyzrgb: np.ndarray, sample_count: int) -> np.ndarray:
+    """Implement the _sample_xyzrgb_points operation used by this module."""
     if xyzrgb.size == 0:
         return np.zeros((sample_count, 6), dtype=np.float32)
     if xyzrgb.shape[0] >= sample_count:
@@ -291,6 +305,7 @@ def _sample_xyzrgb_points(xyzrgb: np.ndarray, sample_count: int) -> np.ndarray:
 
 
 def _coerce_optional_path(value: str | os.PathLike[str] | None) -> Path | None:
+    """Implement the _coerce_optional_path operation used by this module."""
     if value is None:
         return None
     text = str(value).strip()
@@ -300,6 +315,7 @@ def _coerce_optional_path(value: str | os.PathLike[str] | None) -> Path | None:
 
 
 def _extract_checkpoint_state_dict(checkpoint: Any) -> dict[str, Any]:
+    """Extract the requested information from the input."""
     if isinstance(checkpoint, dict):
         for key in ("module", "state_dict", "model", "ema"):
             nested = checkpoint.get(key)
@@ -314,6 +330,7 @@ def _extract_checkpoint_state_dict(checkpoint: Any) -> dict[str, Any]:
 
 
 def _strip_state_dict_prefix(state_dict: dict[str, Any], prefix: str = "module.") -> dict[str, Any]:
+    """Implement the _strip_state_dict_prefix operation used by this module."""
     if not state_dict:
         return state_dict
     if all(isinstance(key, str) and key.startswith(prefix) for key in state_dict.keys()):
@@ -351,6 +368,7 @@ def _state_dict_alignment_summary(
     model_state_dict: dict[str, Any],
     checkpoint_state_dict: dict[str, Any],
 ) -> dict[str, Any]:
+    """Implement the _state_dict_alignment_summary operation used by this module."""
     model_keys = {key for key in model_state_dict.keys() if isinstance(key, str)}
     checkpoint_keys = {key for key in checkpoint_state_dict.keys() if isinstance(key, str)}
     shared_keys = sorted(model_keys & checkpoint_keys)
@@ -386,6 +404,7 @@ def _best_state_dict_remap(
         ("module.", "backbone."),
     ),
 ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    """Implement the _best_state_dict_remap operation used by this module."""
     best_name = "raw"
     best_state_dict = checkpoint_state_dict
     best_summary = _state_dict_alignment_summary(model_state_dict, checkpoint_state_dict)
@@ -414,6 +433,7 @@ def _best_state_dict_remap(
 
 
 def _load_checkpoint(path: Path) -> Any:
+    """Load the requested data or model artifact."""
     try:
         return torch.load(path, map_location="cpu", weights_only=False)
     except TypeError:
@@ -421,6 +441,7 @@ def _load_checkpoint(path: Path) -> Any:
 
 
 def _git_command(repo_root: Path, *args: str) -> str | None:
+    """Implement the _git_command operation used by this module."""
     try:
         completed = subprocess.run(
             ["git", "-C", str(repo_root), *args],
@@ -435,6 +456,7 @@ def _git_command(repo_root: Path, *args: str) -> str | None:
 
 
 def _repo_release_summary(repo_root: Path) -> dict[str, str | bool | None]:
+    """Implement the _repo_release_summary operation used by this module."""
     git_dir = repo_root / ".git"
     has_git = git_dir.exists()
     tag = _git_command(repo_root, "describe", "--tags", "--exact-match", "HEAD") if has_git else None
@@ -449,6 +471,7 @@ def _repo_release_summary(repo_root: Path) -> dict[str, str | bool | None]:
 
 
 def _detect_ptv3_repo_layout(repo_root: Path) -> str:
+    """Implement the _detect_ptv3_repo_layout operation used by this module."""
     has_pointcept_pkg = (repo_root / "pointcept").is_dir()
     has_standalone_model = (repo_root / "model.py").is_file()
     if has_pointcept_pkg and not has_standalone_model:
@@ -467,6 +490,7 @@ def _validate_ptv3_release_alignment(
     expected_commit: str | None,
     strict: bool,
 ) -> dict[str, str | bool | None]:
+    """Validate the requested project invariant."""
     summary = _repo_release_summary(repo_root)
     expected_tag = (expected_tag or "").strip() or None
     expected_commit = (expected_commit or "").strip().lower() or None
@@ -504,6 +528,7 @@ def _validate_ptv3_release_alignment(
 
 
 def _env_int(name: str, default: int) -> int:
+    """Implement the _env_int operation used by this module."""
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -511,6 +536,7 @@ def _env_int(name: str, default: int) -> int:
 
 
 def _env_float(name: str, default: float) -> float:
+    """Implement the _env_float operation used by this module."""
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -518,6 +544,7 @@ def _env_float(name: str, default: float) -> float:
 
 
 def _env_bool(name: str, default: bool) -> bool:
+    """Implement the _env_bool operation used by this module."""
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -525,6 +552,7 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 def _env_int_tuple(name: str, default: tuple[int, ...]) -> tuple[int, ...]:
+    """Implement the _env_int_tuple operation used by this module."""
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -539,6 +567,7 @@ def _env_int_tuple(name: str, default: tuple[int, ...]) -> tuple[int, ...]:
 
 
 def _ensure_package_module(package_name: str, package_path: Path) -> ModuleType:
+    """Implement the _ensure_package_module operation used by this module."""
     module = sys.modules.get(package_name)
     if module is not None:
         return module  # type: ignore[return-value]
@@ -549,6 +578,7 @@ def _ensure_package_module(package_name: str, package_path: Path) -> ModuleType:
 
 
 def _load_module_from_path(module_name: str, module_path: Path, package_path: Path) -> ModuleType:
+    """Load the requested data or model artifact."""
     spec = importlib.util.spec_from_file_location(
         module_name,
         str(module_path),
@@ -563,16 +593,19 @@ def _load_module_from_path(module_name: str, module_path: Path, package_path: Pa
 
 
 def _offset2batch(offset: torch.Tensor) -> torch.Tensor:
+    """Implement the _offset2batch operation used by this module."""
     bincount = offset2bincount(offset)
     return torch.arange(len(bincount), device=offset.device, dtype=torch.long).repeat_interleave(bincount)
 
 
 @torch.inference_mode()
 def _batch2offset(batch: torch.Tensor) -> torch.Tensor:
+    """Implement the _batch2offset operation used by this module."""
     return torch.cumsum(batch.bincount(), dim=0).long()
 
 
 def _infer_ptv3_num_classes(state_dict: dict[str, Any], default: int = 20) -> int:
+    """Infer the requested value from available inputs."""
     for key in ("seg_head.weight", "module.seg_head.weight"):
         tensor = state_dict.get(key)
         if isinstance(tensor, torch.Tensor) and tensor.ndim >= 1:
@@ -636,6 +669,7 @@ class PoseDescriptorEncoder:
     name = "pose_descriptor"
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         observation = episode.observation
         trajectory = episode.trajectory
 
@@ -740,6 +774,7 @@ class RGBHistogramEncoder:
     name = "rgb_histogram"
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         front_rgb = episode.observation.get("front_rgb")
         features: list[np.ndarray] = []
 
@@ -796,6 +831,7 @@ class GlobalColorEncoder:
     name = "global_color"
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         front_rgb = episode.observation.get("front_rgb")
         features: list[np.ndarray] = []
 
@@ -848,6 +884,7 @@ class GeometryOnlyEncoder:
     name = "geometry_only"
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         observation = episode.observation
         trajectory = episode.trajectory
 
@@ -909,10 +946,12 @@ class RandomEpisodeEncoder:
     name = "random"
 
     def __init__(self, output_dim: int = 512, seed: int = 42):
+        """Initialize this component."""
         self.output_dim = output_dim
         self.seed = seed
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         payload = f"{self.seed}:{episode.task_name}:{episode.episode_id}".encode("utf-8")
         digest = hashlib.sha256(payload).digest()
         local_seed = int.from_bytes(digest[:8], "little", signed=False)
@@ -952,6 +991,7 @@ class Uni3DEncoder:
         use_real: bool | None = None,
         **_: Any,
     ):
+        """Initialize this component."""
         self.sample_count = sample_count
         self.output_dim = output_dim
         self.repo_root = _coerce_optional_path(repo_root or os.getenv("UNI3D_REPO_ROOT"))
@@ -989,6 +1029,7 @@ class Uni3DEncoder:
         self._real_backend_failed = False
 
     def _build_real_backend(self) -> Any:
+        """Build the requested project object."""
         if self.repo_root is None or self.checkpoint is None:
             raise FileNotFoundError(
                 "Set both UNI3D_REPO_ROOT and UNI3D_CHECKPOINT to enable the real Uni3D backend."
@@ -1046,6 +1087,7 @@ class Uni3DEncoder:
         return model
 
     def _get_real_backend(self) -> Any | None:
+        """Implement the _get_real_backend operation used by this module."""
         if self._real_backend_failed:
             return None
         if self._real_model is not None:
@@ -1065,6 +1107,7 @@ class Uni3DEncoder:
         return self._real_model
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         if self.use_real:
             model = self._get_real_backend()
             if model is not None:
@@ -1132,6 +1175,7 @@ class PointTransformerV3Encoder:
         use_real: bool | None = None,
         **_: Any,
     ):
+        """Initialize this component."""
         self.sample_count = sample_count
         self.output_dim = output_dim
         self.repo_root = _coerce_optional_path(repo_root or os.getenv("PTV3_REPO_ROOT"))
@@ -1208,6 +1252,7 @@ class PointTransformerV3Encoder:
         self._real_backend_failed = False
 
     def _build_real_backend(self) -> Any:
+        """Build the requested project object."""
         if self.repo_root is None or self.checkpoint is None:
             raise FileNotFoundError(
                 "Set both PTV3_REPO_ROOT and PTV3_CHECKPOINT to enable the real PTv3 backend."
@@ -1416,6 +1461,7 @@ class PointTransformerV3Encoder:
         return model
 
     def _get_real_backend(self) -> Any | None:
+        """Implement the _get_real_backend operation used by this module."""
         if self._real_backend_failed:
             return None
         if self._real_model is not None:
@@ -1435,6 +1481,7 @@ class PointTransformerV3Encoder:
         return self._real_model
 
     def encode(self, episode: ExportedEpisode) -> np.ndarray:
+        """Encode an episode into a retrieval embedding."""
         if self.use_real:
             model = self._get_real_backend()
             if model is not None:

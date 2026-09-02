@@ -20,6 +20,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--dataset-root",
@@ -44,6 +45,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _load_manifest(dataset_root: Path) -> pd.DataFrame:
+    """Load the requested data or model artifact."""
     manifest_path = dataset_root / "manifest.parquet"
     if not manifest_path.exists():
         raise FileNotFoundError(f"Missing manifest: {manifest_path}")
@@ -51,6 +53,7 @@ def _load_manifest(dataset_root: Path) -> pd.DataFrame:
 
 
 def _load_row(manifest: pd.DataFrame, episode_id: str) -> pd.Series:
+    """Load the requested data or model artifact."""
     matches = manifest[manifest["episode_id"].astype(str) == episode_id]
     if matches.empty:
         raise ValueError(f"Episode id not found in manifest: {episode_id}")
@@ -58,6 +61,7 @@ def _load_row(manifest: pd.DataFrame, episode_id: str) -> pd.Series:
 
 
 def _load_episode(dataset_root: Path, row: pd.Series) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict]:
+    """Load the requested data or model artifact."""
     observation_path = dataset_root / str(row["observation_path"])
     trajectory_path = dataset_root / str(row["trajectory_path"])
     metadata_path = dataset_root / str(row["metadata_path"])
@@ -71,12 +75,14 @@ def _load_episode(dataset_root: Path, row: pd.Series) -> tuple[dict[str, np.ndar
 
 
 def _plot_rgb(ax, rgb: np.ndarray, title: str) -> None:
+    """Implement the _plot_rgb operation used by this module."""
     ax.imshow(rgb)
     ax.set_title(title)
     ax.axis("off")
 
 
 def _plot_point_cloud(ax, point_cloud: np.ndarray, title: str) -> None:
+    """Implement the _plot_point_cloud operation used by this module."""
     points = np.asarray(point_cloud[0], dtype=np.float32).reshape(-1, 3)
     points = points[np.isfinite(points).all(axis=1)]
     if len(points) > 2500:
@@ -90,6 +96,7 @@ def _plot_point_cloud(ax, point_cloud: np.ndarray, title: str) -> None:
 
 
 def _plot_trajectory(ax, trajectory: dict[str, np.ndarray], title: str) -> None:
+    """Implement the _plot_trajectory operation used by this module."""
     if "joint_positions" in trajectory:
         ax.plot(np.asarray(trajectory["joint_positions"], dtype=np.float32))
         ax.set_xlabel("t")
@@ -105,6 +112,7 @@ def _plot_trajectory(ax, trajectory: dict[str, np.ndarray], title: str) -> None:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
     dataset_root = args.dataset_root
     manifest = _load_manifest(dataset_root)

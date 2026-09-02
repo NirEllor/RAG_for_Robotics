@@ -98,7 +98,9 @@ def _live_rlbench_episode_worker(result_queue):
 
 
 def main():
+    """Run the command-line entry point."""
     def fmt_gb(value):
+        """Implement the fmt_gb operation used by this module."""
         return f"{value:.1f}" if isinstance(value, (int, float)) else "N/A"
 
     print("=" * 80)

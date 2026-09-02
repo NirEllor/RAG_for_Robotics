@@ -20,6 +20,7 @@ from action_retrieval.simulation.source_inventory import (
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source-root",
@@ -50,6 +51,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _print_inventory(prefix: str, inventory) -> None:
+    """Implement the _print_inventory operation used by this module."""
     print(f"{prefix}source_root: {inventory.source_root}")
     print(f"{prefix}tasks_root: {inventory.tasks_root}")
     print(f"{prefix}tasks: {inventory.task_count}")
@@ -62,6 +64,7 @@ def _print_inventory(prefix: str, inventory) -> None:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
 
     if args.source_root is not None:

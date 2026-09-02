@@ -18,6 +18,7 @@ from action_retrieval.simulation.saved_importer import load_saved_reach_target_d
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--config",
@@ -70,6 +71,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
     cfg = OmegaConf.load(args.config)
 

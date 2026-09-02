@@ -37,6 +37,7 @@ from action_retrieval.retrieval.encoders import (  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["uni3d", "ptv3", "both"], default="both")
     parser.add_argument("--device", default=None, help="Torch device override, e.g. cuda or cpu.")
@@ -67,12 +68,14 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _print_header(title: str) -> None:
+    """Implement the _print_header operation used by this module."""
     print("=" * 88)
     print(title)
     print("=" * 88)
 
 
 def _checkpoint_report(checkpoint_path: Path) -> dict[str, Any]:
+    """Implement the _checkpoint_report operation used by this module."""
     checkpoint = _load_checkpoint(checkpoint_path)
     state_dict = _extract_checkpoint_state_dict(checkpoint)
     top_level_keys = list(checkpoint.keys()) if isinstance(checkpoint, dict) else []
@@ -92,6 +95,7 @@ def _checkpoint_report(checkpoint_path: Path) -> dict[str, Any]:
 
 
 def _make_ptv3_sample(sample_count: int, device: torch.device) -> dict[str, Any]:
+    """Implement the _make_ptv3_sample operation used by this module."""
     sampled = torch.randn(sample_count, 6, dtype=torch.float32, device=device)
     return {
         "coord": sampled[:, :3].contiguous(),
@@ -102,10 +106,12 @@ def _make_ptv3_sample(sample_count: int, device: torch.device) -> dict[str, Any]
 
 
 def _make_uni3d_sample(sample_count: int, device: torch.device) -> torch.Tensor:
+    """Implement the _make_uni3d_sample operation used by this module."""
     return torch.randn(1, sample_count, 6, dtype=torch.float32, device=device)
 
 
 def _summarize_tensor(tensor: torch.Tensor) -> dict[str, Any]:
+    """Implement the _summarize_tensor operation used by this module."""
     return {
         "shape": tuple(tensor.shape),
         "dtype": str(tensor.dtype),
@@ -118,16 +124,21 @@ def _summarize_tensor(tensor: torch.Tensor) -> dict[str, Any]:
 
 
 def _attach_stage_hooks(model: torch.nn.Module, label: str) -> list[Any]:
+    """Implement the _attach_stage_hooks operation used by this module."""
     hooks = []
 
     def make_pre_hook(name: str):
+        """Implement the make_pre_hook operation used by this module."""
         def _hook(module: torch.nn.Module, inputs: tuple[Any, ...]) -> None:
+            """Implement the _hook operation used by this module."""
             print(f"[{label}] -> enter {name}", flush=True)
 
         return _hook
 
     def make_post_hook(name: str):
+        """Implement the make_post_hook operation used by this module."""
         def _hook(module: torch.nn.Module, inputs: tuple[Any, ...], output: Any) -> None:
+            """Implement the _hook operation used by this module."""
             print(f"[{label}] <- exit {name}", flush=True)
 
         return _hook
@@ -139,6 +150,7 @@ def _attach_stage_hooks(model: torch.nn.Module, label: str) -> list[Any]:
 
 
 def _print_alignment_summary(model: torch.nn.Module, checkpoint_state_dict: dict[str, Any], label: str) -> dict[str, Any]:
+    """Implement the _print_alignment_summary operation used by this module."""
     model_state_dict = model.state_dict()
     summary = _state_dict_alignment_summary(model_state_dict, checkpoint_state_dict)
     remap_name, remapped_state_dict, remap_summary = _best_state_dict_remap(model_state_dict, checkpoint_state_dict)
@@ -165,6 +177,7 @@ def _print_alignment_summary(model: torch.nn.Module, checkpoint_state_dict: dict
 
 
 def _diagnose_uni3d(device: torch.device, forward_smoke: bool, sample_count: int | None) -> dict[str, Any]:
+    """Implement the _diagnose_uni3d operation used by this module."""
     _print_header("Uni3D diagnosis")
     encoder = Uni3DEncoder(use_real=True, device=str(device))
     if encoder.checkpoint is None:
@@ -209,6 +222,7 @@ def _diagnose_uni3d(device: torch.device, forward_smoke: bool, sample_count: int
 
 
 def _diagnose_ptv3(device: torch.device, forward_smoke: bool, sample_count: int | None) -> dict[str, Any]:
+    """Implement the _diagnose_ptv3 operation used by this module."""
     _print_header("PTv3 diagnosis")
     encoder = PointTransformerV3Encoder(use_real=True, device=str(device))
     if encoder.checkpoint is None:
@@ -260,6 +274,7 @@ def _diagnose_ptv3(device: torch.device, forward_smoke: bool, sample_count: int 
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     faulthandler.enable()
     args = _parse_args()
     device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))

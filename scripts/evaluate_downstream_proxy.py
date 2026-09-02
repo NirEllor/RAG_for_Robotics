@@ -18,6 +18,7 @@ import pandas as pd
 
 
 def _args() -> argparse.Namespace:
+    """Implement the _args operation used by this module."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--retrieval-dir", type=Path, required=True)
@@ -26,6 +27,7 @@ def _args() -> argparse.Namespace:
 
 
 def _parse_ids(value: object) -> list[str]:
+    """Parse command-line arguments."""
     if isinstance(value, list):
         return [str(item) for item in value]
     if value is None or (isinstance(value, float) and np.isnan(value)):
@@ -38,6 +40,7 @@ def _parse_ids(value: object) -> list[str]:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _args()
     manifest = pd.read_parquet(args.dataset_root / "manifest.parquet")
     episode_to_task = dict(zip(manifest["episode_id"].astype(str), manifest["task_name"].astype(str)))

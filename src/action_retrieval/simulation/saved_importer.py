@@ -12,6 +12,7 @@ from typing import Iterable, Optional
 
 
 def _project_root() -> Path:
+    """Resolve the relevant project path."""
     return Path(__file__).resolve().parents[3]
 
 
@@ -30,6 +31,7 @@ def candidate_saved_demo_roots() -> list[Path]:
 
 
 def _has_task_variation(root: Path, task_name: str, variation_number: int = 0) -> bool:
+    """Implement the _has_task_variation operation used by this module."""
     return (root / task_name / f"variation{variation_number}" / "variation_descriptions.pkl").exists()
 
 

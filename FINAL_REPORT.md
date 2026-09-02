@@ -15,6 +15,9 @@ The projection head does not improve held-out performance over original Uni3D.
 The simulator experiment validates integration but is not a learned planning
 benchmark because the exported episodes do not contain explicit action arrays.
 
+The complete implementation, reproduction instructions, and supporting scripts
+are available in the project repository: [RAG for Robotics on GitHub](https://github.com/NirEllor/RAG_for_Robotics).
+
 ## 1. Introduction and Related Work
 
 ### 1.1 Motivation and Research Question
@@ -92,6 +95,16 @@ trajectory-transfer proxy. It does not claim to deliver a complete learned
 planner. This distinction is important because retrieval quality and planning
 success are related but different measurements.
 
+### 1.4 Proposal Scope and Deliverables
+
+The approved proposal asked whether pretrained 3D geometric representations can
+retrieve useful manipulation experiences, whether they remain reliable under
+scene variations, and whether retrieved experiences can support downstream
+planning. The completed scope delivers the first two parts rigorously and
+provides offline downstream and simulator-integration evidence for the third.
+The project deliberately reports the learned-planner component as future work
+rather than presenting replay as a learned planning result.
+
 ## 2. Method
 
 ### 2.1 Dataset and Experience Database
@@ -109,6 +122,45 @@ identity, and metadata. Relevance annotations are task-group based: an episode
 is relevant when it belongs to the same task group as the query. This is a
 well-defined retrieval protocol, but it is not equivalent to measuring whether
 the retrieved trajectory is executable in a new scene.
+
+### 2.1.1 Code Structure
+
+The repository is organized around a small, reproducible experiment pipeline:
+
+```text
+RAG_for_Robotics/
+|-- src/action_retrieval/
+|   |-- data/              Dataset schema, export, transforms, validation
+|   |-- retrieval/         Episode loading, encoders, embeddings, ranking
+|   |-- evaluation/        Retrieval metrics and evaluation protocol
+|   |-- simulation/        RLBench source import and trajectory utilities
+|   |-- downstream/        Offline downstream transfer interfaces
+|   |-- visualization/     Visualization package namespace
+|   `-- utils/             Environment and reproducibility helpers
+|-- scripts/
+|   |-- evaluate_retrieval.py             Main retrieval evaluation
+|   |-- evaluate_robustness.py             Viewpoint/occlusion/noise tests
+|   |-- train_action_aware_projection.py  Frozen-backbone projection head
+|   |-- evaluate_projected_embeddings.py  Held-out projection evaluation
+|   |-- evaluate_downstream_proxy.py       Offline trajectory-transfer proxy
+|   |-- run_rlbench_planning_pilot.py     Guarded simulator replay pilot
+|   `-- plot_report_figures.py             Report figure generation
+|-- configs/               Dataset, encoder, retrieval, and experiment settings
+|-- slurm/                 Cluster jobs for setup, evaluation, and diagnostics
+|-- tests/                 Unit and integration tests for project code
+|-- third_party/           External RLBench/PyRep integration boundary
+|-- requirements.txt       General Python dependencies
+|-- requirements-cluster.txt Validated Cluster additions and versions
+|-- ENVIRONMENT_REPRODUCTION.md  Exact environment and checkpoint record
+|-- README.md              Reproduction instructions and attribution
+`-- FINAL_REPORT.md        This report
+```
+
+The `src/` package contains reusable project logic, `scripts/` contains
+experiment entry points, `configs/` makes settings explicit, and `slurm/`
+encodes the Cluster execution environment. Large datasets, model checkpoints,
+and generated result archives are kept outside the Git source tree and are
+referenced by their recorded paths and hashes.
 
 ### 2.2 Retrieval Encoders
 

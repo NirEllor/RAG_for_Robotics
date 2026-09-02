@@ -36,14 +36,17 @@ class RLBenchDemoSpec:
 
 
 def _utc_now() -> str:
+    """Implement the _utc_now operation used by this module."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def _project_root() -> Path:
+    """Resolve the relevant project path."""
     return Path(__file__).resolve().parents[3]
 
 
 def _sha256_file(path: Path) -> str:
+    """Compute a SHA-256 digest for the requested file."""
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -52,6 +55,7 @@ def _sha256_file(path: Path) -> str:
 
 
 def _json_default(value: Any) -> Any:
+    """Implement the _json_default operation used by this module."""
     if isinstance(value, np.ndarray):
         return value.tolist()
     if isinstance(value, (np.integer, np.floating)):
@@ -62,6 +66,7 @@ def _json_default(value: Any) -> Any:
 
 
 def _write_json(path: Path, payload: Any) -> None:
+    """Persist the requested artifact."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, default=_json_default)
@@ -69,6 +74,7 @@ def _write_json(path: Path, payload: Any) -> None:
 
 
 def _stack_field(observations: Sequence[Any], field: str) -> np.ndarray | None:
+    """Implement the _stack_field operation used by this module."""
     values = []
     for obs in observations:
         value = getattr(obs, field, None)
@@ -79,6 +85,7 @@ def _stack_field(observations: Sequence[Any], field: str) -> np.ndarray | None:
 
 
 def _stack_optional_misc(observations: Sequence[Any], key: str) -> np.ndarray | None:
+    """Implement the _stack_optional_misc operation used by this module."""
     values = []
     for obs in observations:
         misc = getattr(obs, "misc", {}) or {}
@@ -89,6 +96,7 @@ def _stack_optional_misc(observations: Sequence[Any], key: str) -> np.ndarray | 
 
 
 def _extract_language_descriptions_from_value(value: Any) -> list[str]:
+    """Extract the requested information from the input."""
     if value is None:
         return []
     if isinstance(value, bytes):
@@ -111,6 +119,7 @@ def _extract_language_descriptions_from_value(value: Any) -> list[str]:
 
 
 def _extract_language_descriptions(task_name: str, variation_id: int, source_root: str = "") -> list[str]:
+    """Extract the requested information from the input."""
     search_roots = [Path(source_root)] if source_root else None
     task_root = resolve_saved_task_demo_root(task_name, search_roots)
     if task_root is None:
@@ -146,6 +155,7 @@ def _extract_language_descriptions(task_name: str, variation_id: int, source_roo
 
 
 def _build_split(episode_ids: Sequence[str], seed: int) -> dict[str, list[str]]:
+    """Build the requested project object."""
     ids = list(episode_ids)
     rng = np.random.default_rng(seed)
     rng.shuffle(ids)
@@ -176,6 +186,7 @@ def _build_split(episode_ids: Sequence[str], seed: int) -> dict[str, list[str]]:
 
 
 def _normalize_episode_directories(values: Sequence[Path | str | None] | None) -> list[Path | None]:
+    """Normalize the input into the project representation."""
     if values is None:
         return []
     normalized: list[Path | None] = []
@@ -185,12 +196,14 @@ def _normalize_episode_directories(values: Sequence[Path | str | None] | None) -
 
 
 def _load_existing_manifest_rows(manifest_path: Path) -> list[dict[str, Any]]:
+    """Load the requested data or model artifact."""
     if not manifest_path.exists():
         return []
     return pd.read_parquet(manifest_path).to_dict(orient="records")
 
 
 def _load_existing_split(split_path: Path) -> dict[str, list[str]]:
+    """Load the requested data or model artifact."""
     if not split_path.exists():
         return {"train": [], "val": [], "test": []}
     with split_path.open("r", encoding="utf-8") as handle:
@@ -204,6 +217,7 @@ def _load_existing_split(split_path: Path) -> dict[str, list[str]]:
 
 
 def _next_episode_index(existing_rows: Sequence[dict[str, Any]]) -> int:
+    """Implement the _next_episode_index operation used by this module."""
     indices = []
     for row in existing_rows:
         episode_id = str(row.get("episode_id", ""))

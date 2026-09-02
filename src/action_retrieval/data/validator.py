@@ -20,6 +20,7 @@ class ValidationResult:
 
 
 def _sha256_file(path: Path) -> str:
+    """Compute a SHA-256 digest for the requested file."""
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -28,11 +29,13 @@ def _sha256_file(path: Path) -> str:
 
 
 def _load_json(path: Path):
+    """Load the requested data or model artifact."""
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def _require_file(errors: list[str], path: Path, label: str) -> bool:
+    """Implement the _require_file operation used by this module."""
     if not path.exists():
         errors.append(f"Missing {label}: {path}")
         return False
@@ -40,6 +43,7 @@ def _require_file(errors: list[str], path: Path, label: str) -> bool:
 
 
 def validate_dataset_root(dataset_root: Path | str) -> ValidationResult:
+    """Implement the validate_dataset_root operation used by this module."""
     dataset_root = Path(dataset_root)
     errors: list[str] = []
     warnings: list[str] = []

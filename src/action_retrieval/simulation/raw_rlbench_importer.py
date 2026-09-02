@@ -24,10 +24,12 @@ from rlbench.backend.const import DEPTH_SCALE, EPISODE_FOLDER, EPISODES_FOLDER, 
 
 
 def _project_root() -> Path:
+    """Resolve the relevant project path."""
     return Path(__file__).resolve().parents[3]
 
 
 def candidate_raw_dataset_roots() -> list[Path]:
+    """Implement the candidate_raw_dataset_roots operation used by this module."""
     roots: list[Path] = []
     roots.append(_project_root() / "data" / "rlbench" / "raw")
     roots.append(_project_root() / "data" / "rlbench_raw")
@@ -36,6 +38,7 @@ def candidate_raw_dataset_roots() -> list[Path]:
 
 
 def _episode_dir_sort_key(path: Path) -> tuple[int, str]:
+    """Implement the _episode_dir_sort_key operation used by this module."""
     name = path.name
     if name.startswith("episode"):
         suffix = name[len("episode") :]
@@ -45,6 +48,7 @@ def _episode_dir_sort_key(path: Path) -> tuple[int, str]:
 
 
 def _episode_dirs_from_root(root: Path) -> list[Path]:
+    """Implement the _episode_dirs_from_root operation used by this module."""
     if not root.exists():
         return []
     if (root / LOW_DIM_PICKLE).exists():
@@ -102,6 +106,7 @@ def resolve_raw_task_root(
 
 
 def _find_camera_folder(episode_dir: Path, camera_name: str, kind: str) -> Path | None:
+    """Implement the _find_camera_folder operation used by this module."""
     candidates = [
         episode_dir / f"{camera_name}_{kind}",
         episode_dir / camera_name / kind,
@@ -115,6 +120,7 @@ def _find_camera_folder(episode_dir: Path, camera_name: str, kind: str) -> Path 
 
 
 def _load_image_series(folder: Path) -> list[Path]:
+    """Load the requested data or model artifact."""
     return [entry for entry in sorted(folder.iterdir()) if entry.is_file() and entry.suffix.lower() == ".png"]
 
 
@@ -122,6 +128,7 @@ def _load_observations(
     episode_dir: Path,
     image_paths: bool,
 ) -> list[SimpleNamespace]:
+    """Load the requested data or model artifact."""
     from pyrep.objects import VisionSensor
     from rlbench.backend.utils import image_to_float_array
 

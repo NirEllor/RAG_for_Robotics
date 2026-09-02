@@ -29,6 +29,7 @@ class RetrievalRunResult:
 
 
 def build_encoder(encoder_name: str, *, output_dim: int = 512, seed: int = 42):
+    """Implement the build_encoder operation used by this module."""
     encoder_name = encoder_name.lower()
     if encoder_name == "pose_descriptor":
         return PoseDescriptorEncoder()
@@ -54,6 +55,7 @@ def embed_episodes(
     output_dim: int = 512,
     seed: int = 42,
 ) -> list[EpisodeEmbedding]:
+    """Implement the embed_episodes operation used by this module."""
     encoder = build_encoder(encoder_name, output_dim=output_dim, seed=seed)
     embeddings: list[EpisodeEmbedding] = []
     for episode in episodes:
@@ -78,6 +80,7 @@ def run_leave_one_out_retrieval(
     seed: int = 42,
     exclude_query_episode: bool = True,
 ) -> RetrievalRunResult:
+    """Implement the run_leave_one_out_retrieval operation used by this module."""
     embeddings = embed_episodes(
         iter_exported_episodes(dataset_root),
         encoder_name=encoder_name,

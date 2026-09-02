@@ -15,6 +15,7 @@ import torch
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--device", default="cuda", help="Torch device to use.")
     parser.add_argument("--num-points", type=int, default=8, help="Number of sparse points.")
@@ -25,6 +26,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _make_sparse_indices(num_points: int, spatial_size: int, device: torch.device) -> torch.Tensor:
+    """Implement the _make_sparse_indices operation used by this module."""
     coords = []
     for idx in range(num_points):
         x = idx % spatial_size
@@ -35,6 +37,7 @@ def _make_sparse_indices(num_points: int, spatial_size: int, device: torch.devic
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     faulthandler.enable()
     args = _parse_args()
     device = torch.device(args.device)

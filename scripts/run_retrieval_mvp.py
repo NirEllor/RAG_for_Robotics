@@ -17,6 +17,7 @@ from action_retrieval.retrieval.pipeline import run_leave_one_out_retrieval
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--dataset-root",
@@ -56,6 +57,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
     result = run_leave_one_out_retrieval(
         args.dataset_root,

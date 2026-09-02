@@ -19,6 +19,7 @@ class RetrievalMatch:
 
 
 def cosine_similarity(query: np.ndarray, candidate: np.ndarray) -> float:
+    """Implement the cosine_similarity operation used by this module."""
     query = np.asarray(query, dtype=np.float32).reshape(-1)
     candidate = np.asarray(candidate, dtype=np.float32).reshape(-1)
     denominator = float(np.linalg.norm(query) * np.linalg.norm(candidate))
@@ -33,6 +34,7 @@ def top_k_cosine(
     k: int,
     exclude_query_episode: bool = True,
 ) -> list[RetrievalMatch]:
+    """Implement the top_k_cosine operation used by this module."""
     scored: list[RetrievalMatch] = []
     for candidate in candidates:
         if exclude_query_episode and candidate.episode_id == query.episode_id:

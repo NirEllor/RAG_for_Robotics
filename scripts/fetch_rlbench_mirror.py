@@ -14,6 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--repo-id",
@@ -86,6 +87,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _run_download(args: argparse.Namespace) -> None:
+    """Implement the _run_download operation used by this module."""
     try:
         from huggingface_hub import snapshot_download
     except ImportError as exc:
@@ -118,6 +120,7 @@ def _extract_one_archive(
     progress_every: int,
     progress_seconds: float,
 ) -> str:
+    """Extract the requested information from the input."""
     relative_parts = archive.relative_to(stage_dir).parts
     if len(relative_parts) < 3:
         raise ValueError(f"Unexpected archive path: {archive}")
@@ -174,6 +177,7 @@ def _extract_archives(
     progress_every: int,
     progress_seconds: float,
 ) -> None:
+    """Extract the requested information from the input."""
     zip_files = sorted(stage_dir.rglob("*.zip"))
     if not zip_files:
         raise FileNotFoundError(f"No zip archives found under {stage_dir}")
@@ -217,6 +221,7 @@ def _extract_archives(
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = _parse_args()
     args.stage_dir.mkdir(parents=True, exist_ok=True)
     args.extract_root.mkdir(parents=True, exist_ok=True)

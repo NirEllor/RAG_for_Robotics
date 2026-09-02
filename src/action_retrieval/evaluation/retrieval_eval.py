@@ -32,6 +32,7 @@ class RetrievalEvaluationRun:
     per_query: list[RetrievalQueryMetrics]
 
     def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
         return {
             "method": self.method,
             "k": self.k,
@@ -41,6 +42,7 @@ class RetrievalEvaluationRun:
 
 
 def load_relevance_annotations(path: Path | str) -> dict[str, set[str]]:
+    """Implement the load_relevance_annotations operation used by this module."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Missing relevance annotations: {path}")
@@ -49,6 +51,7 @@ def load_relevance_annotations(path: Path | str) -> dict[str, set[str]]:
 
 
 def _infer_relevance_flags(retrieved_ids: Iterable[str], relevant_ids: set[str]) -> list[int]:
+    """Infer the requested value from available inputs."""
     return [1 if candidate in relevant_ids else 0 for candidate in retrieved_ids]
 
 
@@ -59,6 +62,7 @@ def evaluate_retrieval_run(
     method: str,
     k: int,
 ) -> RetrievalEvaluationRun:
+    """Implement the evaluate_retrieval_run operation used by this module."""
     per_query: list[RetrievalQueryMetrics] = []
     for query_id, matches in run.matches.items():
         relevant_ids = relevance_annotations.get(query_id, set())
@@ -126,6 +130,7 @@ def evaluate_retrieval_methods(
     query_split: str = "all",
     candidate_split: str = "all",
 ) -> list[RetrievalEvaluationRun]:
+    """Implement the evaluate_retrieval_methods operation used by this module."""
     dataset_root = Path(dataset_root)
     ks = sorted({int(k) for k in ks if int(k) > 0})
     if not ks:
@@ -180,6 +185,7 @@ def evaluate_retrieval_methods(
 
 
 def runs_to_dataframe(runs: Iterable[RetrievalEvaluationRun]) -> pd.DataFrame:
+    """Implement the runs_to_dataframe operation used by this module."""
     import pandas as pd
 
     rows = []
@@ -197,6 +203,7 @@ def runs_to_dataframe(runs: Iterable[RetrievalEvaluationRun]) -> pd.DataFrame:
 
 
 def per_query_to_dataframe(runs: Iterable[RetrievalEvaluationRun]) -> pd.DataFrame:
+    """Implement the per_query_to_dataframe operation used by this module."""
     import pandas as pd
 
     rows = []
