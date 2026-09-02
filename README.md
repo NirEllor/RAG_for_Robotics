@@ -4,7 +4,7 @@
 similar and action-compatible for robotic manipulation, and are they more robust than image representations
 under viewpoint, appearance, noise, and partial-observation changes?
 
-**Status:** dataset ingestion, retrieval baselines, and evaluation are in progress.
+**Status:** dataset ingestion, real-backend retrieval evaluation, robustness testing, and offline downstream transfer are complete; final report packaging is in progress.
 
 ## Quick Start
 
@@ -13,9 +13,9 @@ See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. 
 
 ### For Users: Environment Setup
 
-1. Inside WSL2 Ubuntu 24.04, install dependencies and CoppeliaSim 4.1 (see CLAUDE.md for details).
-2. Run `scripts/smoke_env.py` to verify the environment and generate your first test episode.
-3. Report the result back before proceeding to Phase 1 (dataset generation).
+1. For CPU baselines, install dependencies with `pip install -e .`.
+2. For Uni3D/PTv3 cluster evaluation, use `slurm/run_prepare_ptv3_pointcept_env.sh` and the clean Pointcept environment described in `slurm/README.md`.
+3. Use the full-dataset and robustness SLURM wrappers to reproduce the locked experiments.
 
 ### For Developers / Future Claude Sessions
 
@@ -65,15 +65,15 @@ pip install -e .
 
 ## Current Phase
 
-**Current work: Dataset expansion and retrieval evaluation**
+**Current work: final report and reproducibility packaging**
 
 - Phase 0 smoke test passes via the saved-demo fallback path.
 - The repo now supports both saved RLBench demos and raw RLBench mirror ingestion.
 - `scripts/build_multitask_dataset.py` can build a multi-task dataset from the configured sources.
 - Retrieval baselines and evaluation scripts already exist.
 
-The current practical focus is to finish dataset scaling, then keep improving
-retrieval and evaluation.
+The current practical focus is to turn the completed experiments into a
+reproducible final report with explicit limitations and result provenance.
 
 ## License
 

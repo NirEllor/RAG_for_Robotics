@@ -12,7 +12,7 @@ Target deadline: September 6, 2026
 
 ## Research Status in One Sentence
 
-We now have a working retrieval-and-evaluation pipeline on both the 8-task subset and the full 19-task dataset; real Uni3D and Pointcept PTv3 backends have passed smoke validation, while the remaining open questions are robustness and downstream planning value.
+We now have a working retrieval-and-evaluation pipeline on both the 8-task subset and the full 19-task dataset; real Uni3D and Pointcept PTv3 backends have passed smoke validation, robustness and offline downstream transfer are complete, and the remaining work is final reporting and reproducibility packaging.
 
 ## Where We Are Now
 
@@ -24,8 +24,8 @@ We are currently here:
 4. `reach_target` was already exported and validated as the smoke benchmark;
 5. a real pretrained Uni3D checkpoint has been loaded and passed a real-backend smoke test;
 6. a real Pointcept PTv3 checkpoint has been loaded and passed a real-backend forward smoke test;
-7. the full 19-task dataset has been exported and the unified evaluation sweep is running or ready to run;
-8. the current retrieval evidence is strong for color-aware baselines, while the remaining research work is robustness and downstream planning evaluation.
+7. the full 19-task dataset has been exported and the unified evaluation sweep has completed;
+8. subset-8 robustness and the offline downstream trajectory-transfer proxy have completed.
 
 ## Live Roadmap
 
@@ -40,7 +40,7 @@ We are currently here:
 | DONE | 7 | Complete full evaluation | Evaluate all 19 tasks with all baselines and both learned 3D backbones | Full-dataset CSV, JSON, and Markdown reports are complete |
 | DONE | 8 | Robustness tests | Run the controlled query-perturbation benchmark for viewpoint, partial occlusion, and geometry noise | Subset-8 robustness outputs are complete and reproducible |
 | DONE | 9 | Minimal downstream planning baseline | Run the offline nearest-trajectory transfer proxy and document its limits | Retrieved trajectories are measured as downstream inputs; simulator execution remains clearly separated |
-| IN PROGRESS | 10 | Freeze final outputs | Verify the full reports, robustness outputs, proxy results, and reproducibility manifest | Final results are ready to present and reproduce |
+| IN PROGRESS | 10 | Freeze final outputs | Verify reports, generate figures, write the final PDF, and complete the reproducibility manifest | Final results are ready to present and reproduce |
 
 ## Recommended Near-Term Task Subset
 
@@ -90,4 +90,4 @@ The active order is:
 | Color-aware retrieval | Done | `global_color` and `rgb_histogram` are implemented and empirically strong. |
 | Uni3D/PTv3 integration | Done | Uni3D and Pointcept PTv3 real backends passed cluster smoke validation. |
 | Full 19-task dataset | Done | `v2_multitask_full` contains all 19 configured tasks and 1,804 episodes. |
-| Full unified evaluation | In progress | The all-methods sweep is running or awaiting final output verification. |
+| Full unified evaluation | Done | All 19 tasks and all configured methods completed; outputs were copied to the canonical results directory. |
