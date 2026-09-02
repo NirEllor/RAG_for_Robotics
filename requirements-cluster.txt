@@ -3,6 +3,7 @@
 easydict==1.13
 tabulate==0.9.0
 gymnasium==0.29.1
+cffi==1.17.1
 
 # The following versions match the clean PTv3 environment used for real
 # Pointcept forward smoke validation. CUDA wheels must be selected by the
