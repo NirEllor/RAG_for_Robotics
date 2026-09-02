@@ -36,7 +36,7 @@ def _args() -> argparse.Namespace:
 
 def _trajectory_actions(path: Path) -> np.ndarray | None:
     with np.load(path) as payload:
-        for key in ("joint_position_action", "joint_velocities", "gripper_pose"):
+        for key in ("joint_position_action",):
             if key in payload.files and payload[key].size:
                 return np.asarray(payload[key], dtype=np.float32)
     return None
@@ -68,7 +68,7 @@ def main() -> int:
     if args.execute:
         try:
             from rlbench.action_modes.action_mode import MoveArmThenGripper
-            from rlbench.action_modes.arm_action_modes import JointVelocity
+            from rlbench.action_modes.arm_action_modes import JointPosition
             from rlbench.action_modes.gripper_action_modes import Discrete
             from rlbench.environment import Environment
             task_module = __import__("rlbench.tasks", fromlist=[TASK_CLASSES[args.task]])
@@ -77,7 +77,7 @@ def main() -> int:
             raise RuntimeError(f"RLBench/CoppeliaSim imports failed: {type(exc).__name__}: {exc}") from exc
 
         env = Environment(
-            action_mode=MoveArmThenGripper(arm_action_mode=JointVelocity(), gripper_action_mode=Discrete()),
+            action_mode=MoveArmThenGripper(arm_action_mode=JointPosition(), gripper_action_mode=Discrete()),
             dataset_root="",
             obs_config=None,
             headless=True,
