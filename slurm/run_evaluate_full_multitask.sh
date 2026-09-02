@@ -22,6 +22,7 @@ source "$SCRIPT_DIR/config.sh"
 
 DATASET_ROOT_OVERRIDE="${DATASET_ROOT_OVERRIDE:-/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_data/processed/v2_multitask_full}"
 ANNOTATIONS_OVERRIDE="${ANNOTATIONS_OVERRIDE:-/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics/configs/evaluation/rlbench_v2_multitask_full_task_labels.json}"
+OUTPUT_DIR_OVERRIDE="${OUTPUT_DIR_OVERRIDE:-$OUTPUT_ROOT/evaluation/retrieval_full/v2_multitask_full}"
 METHODS_OVERRIDE="${METHODS_OVERRIDE:-random pose_descriptor rgb_histogram global_color geometry_only uni3d ptv3}"
 KS_OVERRIDE="${KS_OVERRIDE:-1 2 3}"
 EVAL_MEM_GB="${EVAL_MEM_GB:-64G}"
@@ -30,6 +31,7 @@ SBATCH_NODELIST_OVERRIDE="${SBATCH_NODELIST_OVERRIDE:-}"
 
 export DATASET_ROOT_OVERRIDE
 export ANNOTATIONS_OVERRIDE
+export OUTPUT_DIR_OVERRIDE
 export METHODS_OVERRIDE
 export KS_OVERRIDE
 export EVAL_MEM_GB

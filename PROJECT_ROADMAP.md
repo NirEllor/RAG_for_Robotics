@@ -37,7 +37,7 @@ We are currently here:
 | DONE | 4 | Make retrieval color-aware | Improve color sensitivity so episodes differing mainly by object color separate more reliably | Color-changing tasks are distinguishable and color-aware baselines are evaluated |
 | DONE | 5 | Make Uni3D real | Load and smoke-test the official pretrained Uni3D checkpoint on the cluster | `uni3d` uses the official backend without proxy fallback |
 | DONE | 6 | Make PTv3 real | Align Pointcept and the clean PyTorch/CUDA environment, then smoke-test the official PTv3 checkpoint | `ptv3` uses the official backend and completes forward |
-| IN PROGRESS | 7 | Complete full evaluation | Evaluate all 19 tasks with all baselines and both learned 3D backbones | Full-dataset CSV, JSON, and Markdown reports are complete |
+| DONE | 7 | Complete full evaluation | Evaluate all 19 tasks with all baselines and both learned 3D backbones | Full-dataset CSV, JSON, and Markdown reports are complete |
 | DONE | 8 | Robustness tests | Run the controlled query-perturbation benchmark for viewpoint, partial occlusion, and geometry noise | Subset-8 robustness outputs are complete and reproducible |
 | NEXT | 9 | Minimal downstream planning baseline | Add nearest-trajectory transfer from retrieved demos | Retrieval is connected to planning, not only ranking |
 | LAST | 10 | Freeze final outputs | Lock reports, figures, configs, commands, and final comparison tables | Final results are ready to present and reproduce |
