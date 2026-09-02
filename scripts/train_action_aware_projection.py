@@ -38,7 +38,7 @@ def _args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _trajectory_signature(trajectory: dict[str, np.ndarray]) -> np.ndarray | None:
+def _trajectory_signature(trajectory: dict[str, np.ndarray]) -> tuple[np.ndarray, str] | None:
     for key in ("joint_position_action", "gripper_pose", "joint_positions"):
         value = trajectory.get(key)
         if value is None:
@@ -52,7 +52,8 @@ def _trajectory_signature(trajectory: dict[str, np.ndarray]) -> np.ndarray | Non
         )
         result = np.zeros(64, dtype=np.float32)
         result[: min(result.size, features.size)] = features[: result.size]
-        return result
+        source = "explicit_action" if key == "joint_position_action" else f"trajectory_state:{key}"
+        return result, source
     return None
 
 
@@ -82,13 +83,16 @@ def main() -> int:
     embeddings = embed_episodes(episodes, encoder_name=args.encoder, seed=args.seed)
     vectors: list[np.ndarray] = []
     targets: list[np.ndarray] = []
+    target_sources: list[str] = []
     metadata: list[dict[str, str]] = []
     for episode, embedding in zip(episodes, embeddings):
-        target = _trajectory_signature(episode.trajectory)
-        if target is None:
+        signature = _trajectory_signature(episode.trajectory)
+        if signature is None:
             continue
+        target, target_source = signature
         vectors.append(np.asarray(embedding.vector, dtype=np.float32))
         targets.append(target)
+        target_sources.append(target_source)
         metadata.append({"episode_id": episode.episode_id, "task_name": episode.task_name, "split": episode.split})
     if len(vectors) < 2:
         raise RuntimeError("Fewer than two episodes contain a usable action trajectory.")
@@ -145,6 +149,7 @@ def main() -> int:
         "encoder": args.encoder,
         "backbone_frozen": True,
         "objective": "trajectory_signature_regression",
+        "target_sources": sorted(set(target_sources)),
         "num_episodes": len(metadata),
         "num_train_episodes": int(train_mask.sum()),
         "projection_dim": args.projection_dim,
@@ -156,7 +161,8 @@ def main() -> int:
     (output_dir / "summary_report.md").write_text(
         "# Action-Aware Projection Head\n\n"
         "This pilot freezes the pretrained 3D encoder and trains only a small projection head. "
-        "The supervision target is a compact signature of the stored action trajectory. "
+        "The supervision target is a compact signature of the stored trajectory. "
+        "Explicit actions are preferred; when unavailable, joint-position state trajectories are used as a clearly labeled proxy. "
         "It is not full backbone fine-tuning and does not establish simulator planning success.\n\n"
         f"- Encoder: `{args.encoder}`\n- Episodes: `{len(metadata)}`\n"
         f"- Train episodes: `{int(train_mask.sum())}`\n- Final train loss: `{losses[-1]:.6f}`\n",

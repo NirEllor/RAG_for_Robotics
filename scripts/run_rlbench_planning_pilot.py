@@ -34,12 +34,17 @@ def _args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _trajectory_actions(path: Path) -> np.ndarray | None:
+def _trajectory_actions(path: Path, *, allow_derived: bool = False) -> tuple[np.ndarray | None, str]:
     with np.load(path) as payload:
-        for key in ("joint_position_action",):
-            if key in payload.files and payload[key].size:
-                return np.asarray(payload[key], dtype=np.float32)
-    return None
+        if "joint_position_action" in payload.files and payload["joint_position_action"].size:
+            return np.asarray(payload["joint_position_action"], dtype=np.float32), "explicit_action"
+        if allow_derived and "joint_positions" in payload.files and payload["joint_positions"].size:
+            positions = np.asarray(payload["joint_positions"], dtype=np.float32)
+            if "gripper_open" in payload.files:
+                gripper = np.asarray(payload["gripper_open"], dtype=np.float32).reshape(len(positions), -1)
+                return np.concatenate([positions, gripper[:, :1]], axis=1), "derived_from_joint_positions"
+            return positions, "derived_from_joint_positions"
+    return None, "missing"
 
 
 def main() -> int:
@@ -51,10 +56,10 @@ def main() -> int:
     records = []
     for _, row in rows.iterrows():
         path = args.dataset_root / str(row["trajectory_path"])
-        actions = _trajectory_actions(path)
-        records.append({"episode_id": str(row["episode_id"]), "action_steps": int(len(actions)) if actions is not None else 0})
+        actions, source = _trajectory_actions(path, allow_derived=True)
+        records.append({"episode_id": str(row["episode_id"]), "action_steps": int(len(actions)) if actions is not None else 0, "action_source": source})
     if not any(item["action_steps"] for item in records):
-        raise RuntimeError("Selected episodes contain no replayable action arrays.")
+        raise RuntimeError("Selected episodes contain neither explicit actions nor joint-position trajectories.")
 
     result = {
         "task": args.task,
@@ -63,7 +68,7 @@ def main() -> int:
         "execute": args.execute,
         "records": records,
         "evaluation_type": "rlbench_trajectory_replay_pilot",
-        "warning": "Replay is not a learned planner and is not comparable to planning success unless executed.",
+        "warning": "Replay is not a learned planner. Derived joint-position replay is not ground-truth action replay.",
     }
     if args.execute:
         try:
@@ -87,7 +92,9 @@ def main() -> int:
             task = env.get_task(task_class)
             task.set_variation(args.variation)
             for record, (_, row) in zip(records, rows.iterrows()):
-                actions = _trajectory_actions(args.dataset_root / str(row["trajectory_path"]))
+                actions, source = _trajectory_actions(args.dataset_root / str(row["trajectory_path"]), allow_derived=True)
+                if source != "explicit_action":
+                    raise RuntimeError("Refusing simulator execution without explicit joint_position_action arrays.")
                 task.reset()
                 reward = 0.0
                 for action in actions if actions is not None else []:
