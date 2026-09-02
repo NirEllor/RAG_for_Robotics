@@ -31,9 +31,11 @@ def _args() -> argparse.Namespace:
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--projected-embeddings", type=Path, required=True)
     parser.add_argument("--annotations", type=Path, required=True)
-    parser.add_argument("--baseline-summary", type=Path, required=True)
+    parser.add_argument("--baseline-summary", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--ks", nargs="+", type=int, default=[1, 2, 3])
+    parser.add_argument("--query-split", default="all", choices=["all", "train", "val", "test"])
+    parser.add_argument("--candidate-split", default="all", choices=["all", "train", "val", "test"])
     return parser.parse_args()
 
 
@@ -63,13 +65,26 @@ def main() -> int:
         )
 
     annotations = load_relevance_annotations(args.annotations)
-    full_matches = {
-        query.episode_id: top_k_cosine(query, embeddings, len(embeddings) - 1)
-        for query in embeddings
+    candidates = [
+        item for item in embeddings
+        if args.candidate_split == "all" or item.split == args.candidate_split
+    ]
+    queries = [
+        item for item in embeddings
+        if args.query_split == "all" or item.split == args.query_split
+    ]
+    candidate_ids = {item.episode_id for item in candidates}
+    filtered_annotations = {
+        query_id: relevant.intersection(candidate_ids)
+        for query_id, relevant in annotations.items()
     }
-    run = RetrievalRunResult(embeddings=embeddings, matches=full_matches)
+    full_matches = {
+        query.episode_id: top_k_cosine(query, candidates, len(candidates))
+        for query in queries
+    }
+    run = RetrievalRunResult(embeddings=candidates, matches=full_matches)
     evaluated = [
-        evaluate_retrieval_run(run, annotations, method="uni3d_action_head", k=k)
+        evaluate_retrieval_run(run, filtered_annotations, method="uni3d_action_head", k=k)
         for k in sorted(set(args.ks))
     ]
     summary = runs_to_dataframe(evaluated)
@@ -81,9 +96,11 @@ def main() -> int:
     if not top1_rows.empty:
         top1_accuracy = float(top1_rows["precision_at_k"].mean())
         summary["top1_accuracy"] = top1_accuracy
-    baseline = pd.read_csv(args.baseline_summary)
-    baseline = baseline[baseline["method"].astype(str).str.lower() == "uni3d"].copy()
-    baseline["comparison_method"] = "uni3d_original"
+    baseline = pd.DataFrame()
+    if args.baseline_summary is not None and args.baseline_summary.exists():
+        baseline = pd.read_csv(args.baseline_summary)
+        baseline = baseline[baseline["method"].astype(str).str.lower() == "uni3d"].copy()
+        baseline["comparison_method"] = "uni3d_original"
     summary["comparison_method"] = "uni3d_action_head"
     comparison = pd.concat([baseline, summary], ignore_index=True, sort=False)
 
@@ -110,8 +127,12 @@ def main() -> int:
                 "dataset_root": str(args.dataset_root),
                 "projected_embeddings": str(args.projected_embeddings),
                 "annotations": str(args.annotations),
-                "baseline_summary": str(args.baseline_summary),
+                "baseline_summary": str(args.baseline_summary) if args.baseline_summary else None,
                 "method": "uni3d_action_head",
+                "query_split": args.query_split,
+                "candidate_split": args.candidate_split,
+                "num_queries": len(queries),
+                "num_candidates": len(candidates),
                 "backbone_recomputed": False,
                 "summary": summary.to_dict(orient="records"),
                 "comparison": comparison.to_dict(orient="records"),
