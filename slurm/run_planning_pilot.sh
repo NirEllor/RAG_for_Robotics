@@ -26,7 +26,8 @@ if ! command -v Xvfb >/dev/null 2>&1; then
   exit 2
 fi
 DISPLAY_NUM=$((100 + ${SLURM_JOB_ID:-$$} % 900))
-Xvfb ":$DISPLAY_NUM" -screen 0 1280x1024x24 -nolisten tcp -ac >/tmp/rag_xvfb_${DISPLAY_NUM}.log 2>&1 &
+Xvfb ":$DISPLAY_NUM" +extension GLX +extension RANDR +extension RENDER \
+  -screen 0 1280x1024x24 -nolisten tcp -ac >/tmp/rag_xvfb_${DISPLAY_NUM}.log 2>&1 &
 XVFB_PID=$!
 trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT
 export DISPLAY=":$DISPLAY_NUM"
@@ -35,6 +36,8 @@ export QT_QPA_PLATFORM_PLUGIN_PATH="$COPPELIASIM_ROOT/platforms"
 export QT_PLUGIN_PATH="$COPPELIASIM_ROOT/platforms"
 export QT_X11_NO_MITSHM=1
 export LIBGL_ALWAYS_SOFTWARE=1
+export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+export MESA_GL_VERSION_OVERRIDE=3.3
 export PYTHONPATH="$PROJECT_ROOT/src:$PROJECT_ROOT/third_party/RLBench:$PROJECT_ROOT/third_party/PyRep:${PYTHONPATH:-}"
 cd "$PROJECT_ROOT"
 python - <<'PY'

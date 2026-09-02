@@ -67,6 +67,8 @@ def _parse_args() -> argparse.Namespace:
         default=42,
         help="Seed for stochastic methods such as random retrieval.",
     )
+    parser.add_argument("--query-split", choices=["all", "train", "val", "test"], default="all")
+    parser.add_argument("--candidate-split", choices=["all", "train", "val", "test"], default="all")
     return parser.parse_args()
 
 
@@ -126,6 +128,8 @@ def main() -> int:
         methods=args.methods,
         ks=args.ks,
         seed=args.seed,
+        query_split=args.query_split,
+        candidate_split=args.candidate_split,
     )
 
     output_dir = args.output_dir
@@ -155,6 +159,8 @@ def main() -> int:
         f"- Annotations: `{annotations_source or 'inferred from manifest task_name groups'}`",
         f"- Methods: {', '.join(args.methods)}",
         f"- K values: {', '.join(str(k) for k in args.ks)}",
+        f"- Query split: `{args.query_split}`",
+        f"- Candidate split: `{args.candidate_split}`",
         "",
         "## Aggregate metrics",
         "",

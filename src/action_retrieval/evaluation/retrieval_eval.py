@@ -123,6 +123,8 @@ def evaluate_retrieval_methods(
     *,
     output_dim: int = 512,
     seed: int = 42,
+    query_split: str = "all",
+    candidate_split: str = "all",
 ) -> list[RetrievalEvaluationRun]:
     dataset_root = Path(dataset_root)
     ks = sorted({int(k) for k in ks if int(k) > 0})
@@ -142,21 +144,34 @@ def evaluate_retrieval_methods(
             )
             embeddings_cache[method] = embeddings
 
-        full_k = max(0, len(embeddings) - 1)
+        candidates = [
+            item for item in embeddings
+            if candidate_split == "all" or item.split == candidate_split
+        ]
+        queries = [
+            item for item in embeddings
+            if query_split == "all" or item.split == query_split
+        ]
+        candidate_ids = {item.episode_id for item in candidates}
+        split_annotations = {
+            query_id: relevant.intersection(candidate_ids)
+            for query_id, relevant in relevance_annotations.items()
+        }
+        full_k = len(candidates)
         matches: dict[str, list[RetrievalMatch]] = {}
-        for query in embeddings:
+        for query in queries:
             matches[query.episode_id] = top_k_cosine(
                 query,
-                embeddings,
+                candidates,
                 k=full_k,
                 exclude_query_episode=True,
             )
-        run = RetrievalRunResult(embeddings=embeddings, matches=matches)
+        run = RetrievalRunResult(embeddings=candidates, matches=matches)
         for k in ks:
             runs.append(
                 evaluate_retrieval_run(
                     run,
-                    relevance_annotations,
+                    split_annotations,
                     method=method,
                     k=k,
                 )
