@@ -92,3 +92,22 @@ not be presented as the primary generalization result.
 | Planning pilot | `RAG_for_Robotics_outputs/evaluation/planning_pilot` |
 | Reproducibility | `RAG_for_Robotics_outputs/evaluation/reproducibility` |
 | Figures | `RAG_for_Robotics_outputs/evaluation/report_figures` |
+
+## Appendix: Machine-Readable Evidence
+
+The final submission may include selected JSON artifacts alongside the PDF or in
+the results archive. They should support, rather than replace, the human-readable
+tables and figures.
+
+- `retrieval_full/v2_multitask_full/evaluation.json`: full evaluation metadata,
+  methods, k values, and output provenance.
+- `retrieval_all/v2_multitask_subset8/evaluation.json`: subset-8 evaluation
+  metadata and configuration.
+- `robustness/v2_multitask_subset8/evaluation.json`: perturbation protocol and
+  robustness output metadata.
+- `action_head/uni3d_subset8_heldout_final/evaluation.json`: held-out projection
+  evaluation metadata.
+- `planning_pilot/reach_target_final_v6/evaluation.json`: simulator pilot
+  execution metadata and explicit replay limitations.
+- `reproducibility/environment.txt` and `checkpoint_sha256.txt`: environment
+  and checkpoint provenance records.
