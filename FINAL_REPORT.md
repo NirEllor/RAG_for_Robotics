@@ -159,6 +159,28 @@ database remains clean. The tested conditions are viewpoint rotation, partial
 occlusion, and geometry noise. This is a controlled proxy for scene variation;
 it does not replace evaluation on independently generated object geometries.
 
+### 2.7 Implementation Ownership and External Code
+
+The experiment orchestration and evaluation code in this repository was written
+for this project. This includes dataset export and validation, manifest and
+annotation handling, retrieval encoders and ranking, evaluation metrics,
+robustness perturbations, projection-head training/evaluation, reproducibility
+scripts, SLURM wrappers, and the simulator pilot harness.
+
+Uni3D and Pointcept/PTv3 are external research codebases used as model runtimes.
+Their pretrained checkpoints and native dependencies were not written as part
+of this project. They are loaded through adapters in this repository, with
+configuration, checkpoint paths, key remapping, device selection, and fallback
+handling implemented here. RLBench, PyRep, CoppeliaSim, PyTorch, PyG, spconv,
+cumm, and other packages are also external dependencies. Their licenses and
+upstream references should be preserved in the submitted code folder.
+
+The scientific contribution of this implementation is the common retrieval
+interface, controlled comparison protocol, task-group relevance evaluation,
+robustness setup, held-out projection-head experiment, and analysis of the
+resulting evidence. We do not claim authorship of the upstream model
+architectures or pretrained weights.
+
 ## 3. Evaluation and Results
 
 ### 3.1 Full 19-Task Retrieval

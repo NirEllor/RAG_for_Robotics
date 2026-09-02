@@ -35,6 +35,23 @@ See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. 
 
 ## Repository Structure
 
+## Code Provenance and Attribution
+
+The project-specific code is the code in `src/`, `scripts/`, `configs/`,
+`slurm/`, and `tests/`. It implements dataset export and validation, retrieval
+interfaces, baseline encoders, ranking metrics, robustness perturbations,
+projection-head experiments, reproducibility capture, and the RLBench pilot
+harness.
+
+The directories and packages used as external dependencies include the Uni3D
+repository, the Pointcept/PTv3 repository, RLBench, PyRep, CoppeliaSim, PyTorch,
+PyTorch Geometric, spconv, cumm, and related Python packages. Their model
+architectures, native kernels, and pretrained checkpoints are upstream assets;
+we do not present them as code authored in this project. The adapters, runtime
+configuration, checkpoint loading/remapping, experiment scripts, and evaluation
+logic surrounding them are project code. Upstream licenses and citations must
+remain included when redistributing or submitting the code.
+
 ```
 project/
 ├── README.md                          (this file)
