@@ -1,0 +1,14 @@
+# Reproducibility additions for the validated Cluster environments.
+# Install the base project first with: pip install -r requirements.txt
+easydict==1.13
+tabulate==0.9.0
+
+# The following versions match the clean PTv3 environment used for real
+# Pointcept forward smoke validation. CUDA wheels must be selected by the
+# Cluster installation script, not from this CPU-agnostic file.
+torch==2.5.0
+torchvision==0.20.0
+torch-geometric==2.8.0.post1
+
+# Uni3D and Pointcept are external checkouts; their repositories and
+# checkpoints are documented in ENVIRONMENT_REPRODUCTION.md.

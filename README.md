@@ -16,10 +16,11 @@ See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. 
 1. For CPU baselines, install dependencies with `pip install -e .`.
 2. For Uni3D/PTv3 cluster evaluation, use `slurm/run_prepare_ptv3_pointcept_env.sh` and the clean Pointcept environment described in `slurm/README.md`.
 3. Use the full-dataset and robustness SLURM wrappers to reproduce the locked experiments.
+4. See [ENVIRONMENT_REPRODUCTION.md](ENVIRONMENT_REPRODUCTION.md) for the validated CUDA/PyTorch stack and asset paths.
 
 ### For Developers / Future Claude Sessions
 
-- Read [CLAUDE.md](CLAUDE.md) for phase status and constraints (CPU-only, no GPU).
+- Read [CLAUDE.md](CLAUDE.md) for phase status and project constraints.
 - The spec ([3d_retrieval_experiment_infrastructure_spec.md](3d_retrieval_experiment_infrastructure_spec.md))
   is authoritative; this README is a summary.
 - Each phase is gated by the previous phase's acceptance tests. Do not skip phases.
@@ -29,6 +30,8 @@ See [CLAUDE.md](CLAUDE.md) for detailed setup instructions and project context. 
 - [PROJECT_DICTIONARY.md](PROJECT_DICTIONARY.md) - plain-language terms and file guide.
 - [EVALUATION_PROTOCOL.md](EVALUATION_PROTOCOL.md) - how retrieval is evaluated.
 - [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) - near-term and mid-term milestones.
+- [FINAL_SUBMISSION_CHECKLIST.md](FINAL_SUBMISSION_CHECKLIST.md) - assignment requirements and evidence.
+- [ENVIRONMENT_REPRODUCTION.md](ENVIRONMENT_REPRODUCTION.md) - Cluster environment capture and checkpoints.
 
 ## Repository Structure
 
@@ -52,11 +55,11 @@ project/
 ## Dependencies
 
 See `requirements.txt` for the full list. Main dependencies:
-- PyTorch (CPU)
+- PyTorch (CPU baselines; CUDA build for real 3D backends)
 - Hydra & OmegaConf (configuration)
 - pandas, numpy, scipy, scikit-learn (data & math)
 - matplotlib (visualization)
-- RLBench, PyRep, CoppeliaSim (simulator; WSL2 only)
+- RLBench, PyRep, CoppeliaSim (Cluster/WSL2 simulator dependencies)
 
 Install with:
 ```bash
@@ -71,6 +74,8 @@ pip install -e .
 - The repo now supports both saved RLBench demos and raw RLBench mirror ingestion.
 - `scripts/build_multitask_dataset.py` can build a multi-task dataset from the configured sources.
 - Retrieval baselines and evaluation scripts already exist.
+- `scripts/train_action_aware_projection.py` trains a small trajectory-aware head while freezing the backbone.
+- `scripts/run_rlbench_planning_pilot.py` validates or executes a deliberately small RLBench trajectory-replay pilot.
 
 The current practical focus is to turn the completed experiments into a
 reproducible final report with explicit limitations and result provenance.

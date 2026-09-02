@@ -6,14 +6,15 @@ This checklist maps the current project state to the submission requirements.
 | --- | --- | --- |
 | Proposal | PARTIAL | The research question, hypotheses, scope, and plan are documented in `3d_retrieval_experiment_infrastructure_spec.md`; a polished proposal section still needs to be included in the final PDF. |
 | Introduction and Related Work | TODO | The final PDF still needs a literature discussion with citations for retrieval-augmented planning, RLBench, Uni3D, Pointcept/PTv3, and image-based retrieval. |
-| Method | PARTIAL | The implementation specification and API guide document the pipeline; the final PDF still needs a formal method description, preprocessing details, checkpoint details, and limitations. |
+| Method | PARTIAL | The implementation specification and API guide document the pipeline; the final PDF still needs a formal method description, preprocessing details, checkpoint details, projection-head definition, and limitations. |
 | Evaluation and Results | PARTIAL | Full 19-task retrieval, subset-8 retrieval, and subset-8 robustness outputs exist. The final PDF still needs tables, figures, per-task analysis, and scientific discussion. |
 | Conclusion | TODO | Must summarize the result, negative findings, limitations, and future work without overstating the offline proxy. |
 | Implementation | DONE | Code, tests, `requirements.txt`, configuration files, SLURM helpers, and API documentation are present. |
-| Reproducibility README | PARTIAL | Reproduction scripts exist; README status and cluster commands should be refreshed before submission. |
+| Reproducibility README | PARTIAL | Reproduction scripts exist; `ENVIRONMENT_REPRODUCTION.md` now documents the validated Cluster stack, but the actual Cluster snapshot still needs to be copied into the results package. |
 | Real Uni3D backend | DONE | Official checkpoint loaded and passed real-backend smoke validation. |
 | Real PTv3 backend | DONE | Pointcept `v1.5.2` runtime and checkpoint passed real-backend forward smoke validation. |
-| Downstream planning | PARTIAL | Offline trajectory-transfer proxy is complete. True simulator planning success was not measured and must be described explicitly as a limitation. |
+| Downstream planning | PARTIAL | Offline trajectory-transfer proxy is complete. A guarded simulator replay pilot exists, but true learned-planner success is not yet measured and must be described explicitly as a limitation. |
+| Action-aware projection head | OPTIONAL | A frozen-backbone trajectory-signature regression pilot is implemented; it should be included only if trained and evaluated with a clean split. |
 | Final PDF | TODO | A final PDF document with the required sections has not yet been produced in this repository. |
 
 ## Current Result Locations

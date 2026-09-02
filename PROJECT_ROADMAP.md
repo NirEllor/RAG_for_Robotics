@@ -41,6 +41,8 @@ We are currently here:
 | DONE | 8 | Robustness tests | Run the controlled query-perturbation benchmark for viewpoint, partial occlusion, and geometry noise | Subset-8 robustness outputs are complete and reproducible |
 | DONE | 9 | Minimal downstream planning baseline | Run the offline nearest-trajectory transfer proxy and document its limits | Retrieved trajectories are measured as downstream inputs; simulator execution remains clearly separated |
 | IN PROGRESS | 10 | Freeze final outputs | Verify reports, generate figures, write the final PDF, and complete the reproducibility manifest | Final results are ready to present and reproduce |
+| OPTIONAL / IN PROGRESS | 11 | Action-aware projection head | Train the small head on frozen embeddings and trajectory signatures; do not fine-tune the backbone unless explicitly justified | A separate ablation exists with train/validation protocol and no backbone updates |
+| OPTIONAL / PILOT | 12 | Simulator planning pilot | Execute stored actions on one or two simple RLBench tasks only if the headless simulator is stable | A real success-rate pilot exists, or the limitation is documented honestly |
 
 ## Recommended Near-Term Task Subset
 
@@ -79,6 +81,7 @@ The active order is:
 2. run the variation/robustness checks,
 3. add the minimal downstream planning baseline,
 4. run the downstream transfer proxy and freeze the final results by September 6, 2026.
+5. collect the Cluster environment snapshot and decide whether the small projection-head and simulator pilots are stable enough to include.
 
 ## What Is Already Effectively Done
 
@@ -91,3 +94,6 @@ The active order is:
 | Uni3D/PTv3 integration | Done | Uni3D and Pointcept PTv3 real backends passed cluster smoke validation. |
 | Full 19-task dataset | Done | `v2_multitask_full` contains all 19 configured tasks and 1,804 episodes. |
 | Full unified evaluation | Done | All 19 tasks and all configured methods completed; outputs were copied to the canonical results directory. |
+| Reproducibility snapshot | In progress | Capture `pip freeze`, GPU/node, module list, commit IDs, and checkpoint hashes inside a SLURM allocation. |
+| Action-aware head | Optional | Code is available, but it is a frozen-backbone trajectory-signature pilot, not full fine-tuning. |
+| Simulator planning success | Optional pilot | A guarded RLBench replay harness exists; no general planning claim is made without executed success results. |
