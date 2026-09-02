@@ -82,6 +82,7 @@ def main() -> int:
             from rlbench.action_modes.arm_action_modes import JointPosition
             from rlbench.action_modes.gripper_action_modes import Discrete
             from rlbench.environment import Environment
+            from action_retrieval.simulation.reach_target_generation import build_reach_target_observation_config
             task_module = __import__("rlbench.tasks", fromlist=[TASK_CLASSES[args.task]])
             task_class = getattr(task_module, TASK_CLASSES[args.task])
         except Exception as exc:  # pragma: no cover - cluster-only dependency
@@ -90,7 +91,7 @@ def main() -> int:
         env = Environment(
             action_mode=MoveArmThenGripper(arm_action_mode=JointPosition(), gripper_action_mode=Discrete()),
             dataset_root="",
-            obs_config=None,
+            obs_config=build_reach_target_observation_config(),
             headless=True,
         )
         successes = 0
