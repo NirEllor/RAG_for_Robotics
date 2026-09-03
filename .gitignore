@@ -163,6 +163,7 @@ RAG_for_Robotics_outputs/
 report_figures.tar.gz
 *.tar.gz
 Final_Project___*.pdf
+uv.lock
 
 # Keep only the public README and final report source in GitHub.
 *.md
