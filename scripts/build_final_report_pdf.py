@@ -16,6 +16,7 @@ from reportlab.platypus import (
     Image,
     PageBreak,
     Paragraph,
+    Preformatted,
     SimpleDocTemplate,
     Spacer,
     Table,
@@ -66,7 +67,16 @@ def _image(path: Path, alt: str) -> Image:
 def _table(rows: list[list[str]], styles: dict[str, ParagraphStyle]) -> Table:
     """Create a styled table from Markdown table rows."""
     wrapped = [[_paragraph(cell.strip(), styles["table"]) for cell in row] for row in rows]
-    table = Table(wrapped, repeatRows=1, hAlign="LEFT")
+    column_count = len(rows[0]) if rows else 0
+    if column_count == 4:
+        widths = [0.85 * inch, 1.65 * inch, 2.65 * inch, 1.4 * inch]
+    elif column_count == 3:
+        widths = [1.35 * inch, 1.7 * inch, 1.7 * inch]
+    elif column_count:
+        widths = [6.55 * inch / column_count] * column_count
+    else:
+        widths = None
+    table = Table(wrapped, colWidths=widths, repeatRows=1, hAlign="LEFT")
     table.setStyle(
         TableStyle(
             [
@@ -98,7 +108,7 @@ def _build_story() -> list[object]:
         "quote": ParagraphStyle("Quote", parent=base["BodyText"], fontName="Helvetica-Oblique", fontSize=9.2, leading=13, leftIndent=18, borderPadding=7, borderColor=colors.HexColor("#9bb8c8"), borderWidth=0.5, borderLeft=True, spaceAfter=8),
         "table": ParagraphStyle("Table", parent=base["BodyText"], fontName="Helvetica", fontSize=7.4, leading=9.2),
         "caption": ParagraphStyle("Caption", parent=base["BodyText"], fontName="Helvetica-Oblique", fontSize=8, leading=10, alignment=TA_CENTER, textColor=colors.HexColor("#4f6570"), spaceAfter=10),
-        "code": ParagraphStyle("Code", parent=base["Code"], fontName="Courier", fontSize=7.2, leading=9, leftIndent=10, backColor=colors.HexColor("#f1f4f5"), borderPadding=6, spaceAfter=8),
+    "code": ParagraphStyle("Code", parent=base["Code"], fontName="Courier", fontSize=5.8, leading=7.2, leftIndent=6, rightIndent=6, backColor=colors.HexColor("#f1f4f5"), borderPadding=6, spaceAfter=8),
     }
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     story: list[object] = []
@@ -122,7 +132,7 @@ def _build_story() -> list[object]:
             while index < len(lines) and not lines[index].startswith("```"):
                 code.append(lines[index])
                 index += 1
-            story.append(_paragraph("<br/>".join(html.escape(x) for x in code), styles["code"]))
+            story.append(Preformatted("\n".join(code), styles["code"]))
             index += 1
             continue
         if line.startswith("# "):
@@ -141,10 +151,10 @@ def _build_story() -> list[object]:
             story.append(_paragraph(line[2:], styles["quote"]))
             index += 1
             continue
-        if line.startswith("| ") and index + 1 < len(lines) and "|---" in lines[index + 1]:
+        if line.lstrip().startswith("|") and index + 1 < len(lines) and re.match(r"^\s*\|?\s*:?-{3,}", lines[index + 1]):
             rows: list[list[str]] = []
-            while index < len(lines) and lines[index].startswith("|"):
-                if index != 0 and set(lines[index].replace("|", "").replace("-", "").replace(":", "").strip()) == set():
+            while index < len(lines) and lines[index].lstrip().startswith("|"):
+                if re.match(r"^\s*\|?\s*:?-{3,}", lines[index]):
                     index += 1
                     continue
                 rows.append([cell for cell in lines[index].strip().strip("|").split("|")])

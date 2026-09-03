@@ -1,3 +1,5 @@
+# Deep Learning for 3D Computer Vision - Final Project
+
 # Retrieval-Augmented Robotic Manipulation with Pretrained 3D Representations
 
 ## Abstract
@@ -363,18 +365,31 @@ identifies representation-task alignment as the central open issue.
 
 ## Appendix A: Machine-Readable Evidence
 
-Selected JSON artifacts should accompany the PDF or final results archive. They
-support, rather than replace, the human-readable tables and figures:
+Machine-readable evidence means the JSON and CSV files produced directly by the
+evaluation scripts. They preserve exact per-query records, aggregate metrics,
+configuration metadata, and split information so that the tables and figures in
+this report can be checked or regenerated programmatically. They support, rather
+than replace, the human-readable analysis.
 
-- Full retrieval `evaluation.json`.
-- Subset-8 retrieval `evaluation.json`.
-- Robustness `evaluation.json`.
-- Held-out Uni3D and action-head `evaluation.json` files.
-- Simulator planning-pilot `evaluation.json`.
-- Reproducibility `environment.txt` and `checkpoint_sha256.txt`.
+| Evidence | Path relative to the project/results package | Cluster source path | Purpose |
+| --- | --- | --- | --- |
+| Full retrieval summary | `RAG_for_Robotics_outputs/evaluation/retrieval_full/v2_multitask_full/summary_metrics.csv` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_outputs/evaluation/retrieval_full/v2_multitask_full/summary_metrics.csv` | Aggregate results for all 19 tasks and all methods |
+| Full retrieval details | `RAG_for_Robotics_outputs/evaluation/retrieval_full/v2_multitask_full/per_query_metrics.csv` and `evaluation.json` | Same directory as above | Per-query rankings and run metadata |
+| Robustness summary | `RAG_for_Robotics_outputs/evaluation/robustness/v2_multitask_subset8/summary_metrics.csv` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_outputs/evaluation/robustness/v2_multitask_subset8/summary_metrics.csv` | Viewpoint, occlusion, and geometry-noise results |
+| Held-out projection evaluation | `RAG_for_Robotics_outputs/evaluation/action_head/uni3d_subset8_heldout_final/` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_outputs/evaluation/action_head/uni3d_subset8_heldout_final/` | Test-to-train comparison of original Uni3D and action head |
+| Downstream proxy | `RAG_for_Robotics_outputs/evaluation/downstream/v2_multitask_full/` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_outputs/evaluation/downstream/v2_multitask_full/` | Offline nearest-trajectory transfer evidence |
+| Simulator pilot | `RAG_for_Robotics_outputs/evaluation/planning_pilot/reach_target/` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_outputs/evaluation/planning_pilot/reach_target/` | Guarded RLBench replay result and limitations |
+| Reproducibility snapshot | `RAG_for_Robotics_outputs/evaluation/reproducibility/environment.txt` and `checkpoint_sha256.txt` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/RAG_for_Robotics_outputs/evaluation/reproducibility/` | Versions, node information, commits, and checkpoint hashes |
+| Dataset metadata | `eval_dataset_metadata/` | `/cs/labs/raananf/ellorw.nir/3d_cv_dl/eval_dataset_metadata/` | Manifest metadata, splits, and SHA-256 checksums |
 
-Implementation and reproduction instructions are provided in `README.md`,
-`ENVIRONMENT_REPRODUCTION.md`, `requirements.txt`, and
+The code that creates these artifacts is organized as follows: retrieval
+results are produced by `scripts/evaluate_retrieval.py`, robustness by
+`scripts/evaluate_robustness.py`, projection-head results by
+`scripts/train_action_aware_projection.py` and
+`scripts/evaluate_projected_embeddings.py`, the downstream proxy by
+`scripts/evaluate_downstream_proxy.py`, and figures by
+`scripts/plot_report_figures.py`. Reproduction instructions are provided in
+`README.md`, `ENVIRONMENT_REPRODUCTION.md`, `requirements.txt`, and
 `requirements-cluster.txt`.
 
 ## References
