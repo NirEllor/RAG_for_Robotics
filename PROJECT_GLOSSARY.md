@@ -7,7 +7,8 @@ libraries, files, dataset objects, and the math notation used in the spec.
 
 - `RAG_for_Robotics` is a research project about retrieving robot demonstrations
   that are both geometrically similar and action-compatible.
-- The main benchmark task right now is `ReachTarget`.
+- The completed benchmark is the full 19-task RLBench export, with `ReachTarget`
+  retained as the simulator pilot task.
 - The current workflow is:
   1. load or export demonstrations,
   2. store them as a versioned dataset,
@@ -126,13 +127,11 @@ The retrieval pipeline is the system that will eventually:
 
 ### Current status
 
-The retrieval pipeline is **not fully built yet**.
-What exists now is:
-- configuration scaffolding,
-- dataset scaffolding,
-- Phase 0 smoke test,
-- Phase 1 exporter and validator,
-- retrieval config placeholders such as exact cosine retrieval.
+The retrieval pipeline is implemented and evaluated. It includes dataset export,
+episode embedding, leave-one-out ranking, task-group relevance evaluation,
+real Uni3D and PTv3 backends, robustness tests, and a held-out projection-head
+pilot. The downstream and simulator results are explicitly proxies or pilots,
+not a learned action-generating planner.
 
 ### Exact cosine retrieval
 
@@ -171,15 +170,14 @@ That means â€œpick the database item with the highest similarity to the query.â€
 
 ### Common learning objective
 
-The exact loss functions are not fully implemented yet in this repo, but the
-project spec discusses objectives like:
+The implemented projection-head objective is trajectory-signature regression.
+The project also discusses possible objectives like:
 - contrastive loss,
 - ranking loss,
 - regression loss for pose or trajectory prediction,
 - action-compatibility scores.
 
-When those are added, this file should be updated with the exact formulas used
-in code.
+The exact implemented formula is documented in Appendix B of `FINAL_REPORT.md`.
 
 ## 8. RLBench Data Layout
 
@@ -224,4 +222,3 @@ If you are trying to understand the repo in order:
 4. Read `scripts/smoke_env.py` to see how the environment is checked.
 5. Read `scripts/build_reach_target_dataset.py` to see how Phase 1 data is exported.
 6. Read `src/action_retrieval/data/exporter.py` and `validator.py` for the dataset logic.
-
