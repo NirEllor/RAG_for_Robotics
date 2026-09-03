@@ -54,12 +54,29 @@ def _inline_markup(
     text = re.sub(r"\[([^]]+)\]\(([^)]+)\)", stash_link, text)
     def inline_math(match: re.Match[str]) -> str:
         expression = _normalise_math(match.group(1))
-        # Inline math is kept at the surrounding text size. Display equations
-        # below are rendered separately, so table cells do not contain stretched
-        # image glyphs that can collide with explanatory text.
-        expression = re.sub(r"\\([A-Za-z]+)", r"\1", expression)
+        # Use ReportLab's native sub/super tags for inline math. Display
+        # equations below are rendered separately as LaTeX images.
+        replacements = {
+            r"\mathbb": "",
+            r"\mathcal": "",
+            r"\mathrm": "",
+            r"\mathbf": "",
+            r"\operatorname": "",
+            r"\dot": "",
+            r"\tau": "tau",
+            r"\theta": "theta",
+            r"\phi": "phi",
+            r"\ell": "ell",
+            r"\in": "in",
+        }
+        for command, replacement in replacements.items():
+            expression = expression.replace(command, replacement)
+        expression = expression.replace(r"\{", "{").replace(r"\}", "}")
         expression = expression.replace("{", "").replace("}", "")
-        return f"<font name='Courier' size='7'>{html.escape(expression)}</font>"
+        expression = html.escape(expression)
+        expression = re.sub(r"([A-Za-z0-9])_([A-Za-z0-9]+)", r"\1<sub>\2</sub>", expression)
+        expression = re.sub(r"([A-Za-z0-9])\^([A-Za-z0-9]+)", r"\1<super>\2</super>", expression)
+        return f"<font name='Helvetica' size='7.2'><i>{expression}</i></font>"
 
     text = re.sub(r"\$([^$]+)\$", inline_math, text)
     text = re.sub(r"`([^`]+)`", r"<font name='Courier'>\1</font>", text)

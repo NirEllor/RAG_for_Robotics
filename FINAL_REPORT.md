@@ -491,9 +491,14 @@ results are produced by `scripts/evaluate_retrieval.py`, robustness by
 
 ## Appendix B: Mathematical Definitions
 
-Let `e_q` denote a query episode and let `D = {e_1, ..., e_N}` denote the
-candidate database. An encoder with parameters `theta` maps the episode
-observation `X_e` to an embedding:
+Let the query episode and candidate database be defined as:
+
+$$
+e_q\in\mathcal{E},\qquad \mathcal{D}=\{e_i\}_{i=1}^{N}.
+$$
+
+An encoder with parameters $\theta$ maps the episode observation $X_e$ to an
+embedding:
 
 $$
 z_e = f_{\theta}(X_e), \qquad z_e \in \mathbb{R}^{d}
@@ -506,18 +511,23 @@ s(e_q,e_i) = \frac{z_q^{\top}z_i}{\lVert z_q\rVert_2\lVert z_i\rVert_2},
 \qquad R_k(e_q) = \operatorname{argsort}_{i}\,s(e_q,e_i)[:k]
 $$
 
-Here `R_k(e_q)` is the ordered top-k retrieval list. If `rel(q, i)` is one
-when candidate `i` belongs to the same task relevance group as query `q`, then
-the principal metrics are:
+Here $R_k(e_q)$ is the ordered top-$k$ retrieval list. Relevance is defined by:
 
 $$
-\operatorname{Precision}@k = \frac{1}{k}\sum_{i\in R_k(q)}\operatorname{rel}(q,i)
+\operatorname{rel}(e_q,e_i)\in\{0,1\},
+$$
+
+where a value of one indicates that candidate $e_i$ belongs to the same task
+relevance group as query $e_q$. The principal metrics are:
+
+$$
+\operatorname{Precision}@k = \frac{1}{k}\sum_{e_i\in R_k(e_q)}\operatorname{rel}(e_q,e_i)
 $$
 $$
-\operatorname{Recall}@k = \frac{\sum_{i\in R_k(q)}\operatorname{rel}(q,i)}{\sum_{i\in D}\operatorname{rel}(q,i)}
+\operatorname{Recall}@k = \frac{\sum_{e_i\in R_k(e_q)}\operatorname{rel}(e_q,e_i)}{\sum_{e_i\in\mathcal{D}}\operatorname{rel}(e_q,e_i)}
 $$
 $$
-\operatorname{HitRate}@k = \mathbf{1}\left[\sum_{i\in R_k(q)}\operatorname{rel}(q,i)>0\right],
+\operatorname{HitRate}@k = \mathbf{1}\left[\sum_{e_i\in R_k(e_q)}\operatorname{rel}(e_q,e_i)>0\right],
 \qquad \operatorname{MRR}=\frac{1}{\operatorname{rank}_q}
 $$
 
@@ -532,8 +542,8 @@ h_{\phi}(z_e) = \operatorname{MLP}_{\phi}(z_e),
 \lVert h_{\phi}(z_e)-a_e\rVert_2^2
 $$
 
-`a_e` is the trajectory-state signature derived from the episode, `phi` are
-the MLP parameters, and the Uni3D parameters `theta` remain frozen. The held-
+Here $a_e$ is the trajectory-state signature derived from the episode, $\phi$
+are the MLP parameters, and the Uni3D parameters $\theta$ remain frozen. The held-
 out protocol trains on 422 episodes and evaluates queries from 141 disjoint
 test episodes against the training candidate set.
 
