@@ -172,10 +172,10 @@ contain the trajectory that could be used by a downstream controller.
 | Database component | Typical contents | Role in this project |
 | --- | --- | --- |
 | Observation | $o_t=(I_t,D_t,P_t,C_t)$: RGB, depth, point cloud, camera metadata | Describes what the robot observed. |
-| 3D representation | $P_t=\{(x_j,y_j,z_j,r_j,g_j,b_j)\}_{j=1}^{M}\to z_e$ | Provides the retrieval key for Uni3D, PTv3, and geometry baselines. |
-| Trajectory | $\tau_e=\{(q_t,\dot{q}_t,g_t,p_t)\}_{t=1}^{T_e}$ | Stores what the robot did during the episode. |
+| 3D representation | $P_t=\{(x_j,y_j,z_j,r_j,g_j,b_j)\}_{j=1}^{M}\to z_e$: $(x_j,y_j,z_j)$ are point coordinates, $(r_j,g_j,b_j)$ are RGB values, $M$ is the number of points, and $z_e$ is the embedding. | Provides the retrieval key for Uni3D, PTv3, and geometry baselines. |
+| Trajectory | $\tau_e=\{(q_t,\dot{q}_t,g_t,p_t)\}_{t=1}^{T_e}$: $q_t$ is joint position, $\dot{q}_t$ joint velocity, $g_t$ gripper state, $p_t$ gripper pose, and $T_e$ the number of time steps. | Stores what the robot did during the episode. |
 | Outcome metadata | $m_e=(y_e,\ell_e,v_e,s_e)$: success, task, variation, source | Supports grouping, filtering, and analysis. |
-| Manifest row | $r_e=(id_e,paths_e,split_e,hash_e)$ | Provides a reproducible index into the database. |
+| Manifest row | $r_e=(id_e,paths_e,split_e,hash_e)$: $id_e$ is the episode ID, $paths_e$ its data-file paths, $split_e$ its train/test assignment, and $hash_e$ a provenance checksum. | Provides a reproducible index into the database. |
 
 The exported layout separates `observation.npz`, `trajectory.npz`, and
 `metadata.json`, with one row in `manifest.parquet` per episode. In the full

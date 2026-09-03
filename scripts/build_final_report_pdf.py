@@ -101,7 +101,7 @@ def _math_image(expression: str, directory: Path, index: int) -> Image:
     expression = _normalise_math(expression)
     math_to_image(f"${expression}$", str(path), dpi=220, format="png", color="#173f5f")
     image = Image(str(path))
-    image._restrictSize(6.5 * inch, 0.8 * inch)
+    image._restrictSize(5.7 * inch, 0.42 * inch)
     image.hAlign = "LEFT"
     return image
 
