@@ -163,7 +163,8 @@ def _build_story(math_directory: Path) -> list[object]:
     """Parse the Markdown report into a ReportLab story."""
     base = getSampleStyleSheet()
     styles = {
-        "title": ParagraphStyle("ReportTitle", parent=base["Title"], fontName="Helvetica-Bold", fontSize=19, leading=23, textColor=colors.HexColor("#173f5f"), alignment=TA_CENTER, spaceAfter=18),
+        "title": ParagraphStyle("ReportTitle", parent=base["Title"], fontName="Helvetica-Bold", fontSize=16, leading=19, textColor=colors.HexColor("#173f5f"), alignment=TA_CENTER, spaceAfter=12),
+        "author": ParagraphStyle("ReportAuthor", parent=base["BodyText"], fontName="Helvetica", fontSize=10.5, leading=14, textColor=colors.HexColor("#4f6570"), alignment=TA_CENTER, spaceAfter=16),
         "h2": ParagraphStyle("H2", parent=base["Heading2"], fontName="Helvetica-Bold", fontSize=14, leading=18, textColor=colors.HexColor("#173f5f"), spaceBefore=14, spaceAfter=7),
         "h3": ParagraphStyle("H3", parent=base["Heading3"], fontName="Helvetica-Bold", fontSize=11.5, leading=15, textColor=colors.HexColor("#28627f"), spaceBefore=10, spaceAfter=5),
         "body": ParagraphStyle("Body", parent=base["BodyText"], fontName="Helvetica", fontSize=9.2, leading=13, alignment=TA_LEFT, spaceAfter=6),
@@ -217,6 +218,10 @@ def _build_story(math_directory: Path) -> list[object]:
             continue
         if line.startswith("# "):
             story.append(_paragraph(line[2:], styles["title"], math_directory, inline_math_counter))
+            index += 1
+            continue
+        if line.strip() == "Nir Ellor Waizner":
+            story.append(_paragraph(line, styles["author"], math_directory, inline_math_counter))
             index += 1
             continue
         if line.startswith("## "):

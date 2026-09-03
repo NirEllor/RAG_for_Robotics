@@ -2,6 +2,8 @@
 
 # Retrieval-Augmented Robotic Manipulation with Pretrained 3D Representations
 
+Nir Ellor Waizner
+
 ## Abstract
 
 This project studies whether geometric similarity between robotic manipulation
