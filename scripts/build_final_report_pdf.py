@@ -5,8 +5,10 @@ from __future__ import annotations
 import html
 import re
 import shutil
+import tempfile
 from pathlib import Path
 
+from matplotlib.mathtext import math_to_image
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
@@ -30,7 +32,17 @@ OUTPUT = ROOT / "output" / "pdf" / "FINAL_REPORT.pdf"
 SUBMISSION_OUTPUT = ROOT / "FINAL_REPORT.pdf"
 
 
-def _inline_markup(text: str) -> str:
+def _normalise_math(expression: str) -> str:
+    """Normalise Markdown math commands supported by Matplotlib mathtext."""
+    expression = expression.replace(r"\lVert", r"\|").replace(r"\rVert", r"\|")
+    return re.sub(r"\\operatorname\{([^}]+)\}", r"\\mathrm{\1}", expression)
+
+
+def _inline_markup(
+    text: str,
+    math_directory: Path | None = None,
+    math_counter: list[int] | None = None,
+) -> str:
     """Convert a small safe subset of Markdown inline markup to ReportLab XML."""
     text = html.escape(text, quote=False)
     links: list[tuple[str, str]] = []
@@ -40,6 +52,20 @@ def _inline_markup(text: str) -> str:
         return f"@@LINK{len(links) - 1}@@"
 
     text = re.sub(r"\[([^]]+)\]\(([^)]+)\)", stash_link, text)
+    def inline_math(match: re.Match[str]) -> str:
+        expression = _normalise_math(match.group(1))
+        if math_directory is None or math_counter is None:
+            return f"<font name='Courier'>{html.escape(expression)}</font>"
+        index = math_counter[0]
+        math_counter[0] += 1
+        path = math_directory / f"inline-equation-{index:03d}.png"
+        math_to_image(f"${expression}$", str(path), dpi=220, format="png", color="#173f5f")
+        # Keep inline equations inside the narrowest report-table cell.
+        width = min(100, max(22, 4.2 * len(expression)))
+        height = 10 if len(expression) < 24 else 12
+        return f'<img src="{path.as_posix()}" width="{width:.1f}" height="{height}" valign="middle"/>'
+
+    text = re.sub(r"\$([^$]+)\$", inline_math, text)
     text = re.sub(r"`([^`]+)`", r"<font name='Courier'>\1</font>", text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", text)
     text = re.sub(r"\*([^*]+)\*", r"<i>\1</i>", text)
@@ -51,9 +77,14 @@ def _inline_markup(text: str) -> str:
     return text
 
 
-def _paragraph(text: str, style: ParagraphStyle) -> Paragraph:
+def _paragraph(
+    text: str,
+    style: ParagraphStyle,
+    math_directory: Path | None = None,
+    math_counter: list[int] | None = None,
+) -> Paragraph:
     """Create a paragraph with sanitized inline Markdown formatting."""
-    return Paragraph(_inline_markup(text), style)
+    return Paragraph(_inline_markup(text, math_directory, math_counter), style)
 
 
 def _image(path: Path, alt: str) -> Image:
@@ -64,9 +95,28 @@ def _image(path: Path, alt: str) -> Image:
     return image
 
 
-def _table(rows: list[list[str]], styles: dict[str, ParagraphStyle]) -> Table:
+def _math_image(expression: str, directory: Path, index: int) -> Image:
+    """Render one LaTeX math expression as a sharp report image."""
+    path = directory / f"equation-{index:03d}.png"
+    expression = _normalise_math(expression)
+    math_to_image(f"${expression}$", str(path), dpi=220, format="png", color="#173f5f")
+    image = Image(str(path))
+    image._restrictSize(6.5 * inch, 0.8 * inch)
+    image.hAlign = "LEFT"
+    return image
+
+
+def _table(
+    rows: list[list[str]],
+    styles: dict[str, ParagraphStyle],
+    math_directory: Path,
+    math_counter: list[int],
+) -> Table:
     """Create a styled table from Markdown table rows."""
-    wrapped = [[_paragraph(cell.strip(), styles["table"]) for cell in row] for row in rows]
+    wrapped = [
+        [_paragraph(cell.strip(), styles["table"], math_directory, math_counter) for cell in row]
+        for row in rows
+    ]
     column_count = len(rows[0]) if rows else 0
     if column_count == 4:
         widths = [0.85 * inch, 1.65 * inch, 2.65 * inch, 1.4 * inch]
@@ -96,7 +146,7 @@ def _table(rows: list[list[str]], styles: dict[str, ParagraphStyle]) -> Table:
     return table
 
 
-def _build_story() -> list[object]:
+def _build_story(math_directory: Path) -> list[object]:
     """Parse the Markdown report into a ReportLab story."""
     base = getSampleStyleSheet()
     styles = {
@@ -113,6 +163,8 @@ def _build_story() -> list[object]:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     story: list[object] = []
     index = 0
+    equation_index = 0
+    inline_math_counter = [1000]
     while index < len(lines):
         line = lines[index]
         if not line.strip():
@@ -135,20 +187,35 @@ def _build_story() -> list[object]:
             story.append(Preformatted("\n".join(code), styles["code"]))
             index += 1
             continue
+        if line.strip() == "$$" or (line.strip().startswith("$$") and line.strip().endswith("$$") and len(line.strip()) > 4):
+            if line.strip() == "$$":
+                index += 1
+                expression: list[str] = []
+                while index < len(lines) and lines[index].strip() != "$$":
+                    expression.append(lines[index].strip())
+                    index += 1
+                index += 1
+                formula = " ".join(expression)
+            else:
+                formula = line.strip()[2:-2].strip()
+                index += 1
+            story.extend([Spacer(1, 3), _math_image(formula, math_directory, equation_index), Spacer(1, 5)])
+            equation_index += 1
+            continue
         if line.startswith("# "):
-            story.append(_paragraph(line[2:], styles["title"]))
+            story.append(_paragraph(line[2:], styles["title"], math_directory, inline_math_counter))
             index += 1
             continue
         if line.startswith("## "):
-            story.append(_paragraph(line[3:], styles["h2"]))
+            story.append(_paragraph(line[3:], styles["h2"], math_directory, inline_math_counter))
             index += 1
             continue
         if line.startswith("### "):
-            story.append(_paragraph(line[4:], styles["h3"]))
+            story.append(_paragraph(line[4:], styles["h3"], math_directory, inline_math_counter))
             index += 1
             continue
         if line.startswith("> "):
-            story.append(_paragraph(line[2:], styles["quote"]))
+            story.append(_paragraph(line[2:], styles["quote"], math_directory, inline_math_counter))
             index += 1
             continue
         if line.lstrip().startswith("|") and index + 1 < len(lines) and re.match(r"^\s*\|?\s*:?-{3,}", lines[index + 1]):
@@ -159,10 +226,10 @@ def _build_story() -> list[object]:
                     continue
                 rows.append([cell for cell in lines[index].strip().strip("|").split("|")])
                 index += 1
-            story.extend([_table(rows, styles), Spacer(1, 8)])
+            story.extend([_table(rows, styles, math_directory, inline_math_counter), Spacer(1, 8)])
             continue
         if re.match(r"^\d+\. ", line) or line.startswith("- "):
-            story.append(_paragraph(line, styles["bullet"]))
+            story.append(_paragraph(line, styles["bullet"], math_directory, inline_math_counter))
             index += 1
             continue
         paragraph = [line]
@@ -170,7 +237,7 @@ def _build_story() -> list[object]:
         while index < len(lines) and lines[index].strip() and not re.match(r"^(#|>|!\[|```|\| |\d+\. |- )", lines[index]):
             paragraph.append(lines[index])
             index += 1
-        story.append(_paragraph(" ".join(paragraph), styles["body"]))
+        story.append(_paragraph(" ".join(paragraph), styles["body"], math_directory, inline_math_counter))
     return story
 
 
@@ -190,7 +257,8 @@ def main() -> None:
     """Build the final PDF report at the stable output path."""
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     document = SimpleDocTemplate(str(OUTPUT), pagesize=A4, rightMargin=0.7 * inch, leftMargin=0.7 * inch, topMargin=0.65 * inch, bottomMargin=0.75 * inch, title="Retrieval-Augmented Robotic Manipulation")
-    document.build(_build_story(), onFirstPage=_footer, onLaterPages=_footer)
+    with tempfile.TemporaryDirectory(prefix="report-math-", dir=OUTPUT.parent) as directory:
+        document.build(_build_story(Path(directory)), onFirstPage=_footer, onLaterPages=_footer)
     shutil.copyfile(OUTPUT, SUBMISSION_OUTPUT)
     print(f"PDF written to: {OUTPUT}")
     print(f"Submission copy written to: {SUBMISSION_OUTPUT}")

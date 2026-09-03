@@ -171,11 +171,11 @@ contain the trajectory that could be used by a downstream controller.
 
 | Database component | Typical contents | Role in this project |
 | --- | --- | --- |
-| Observation | RGB, depth, world-frame point cloud, camera metadata | Describes what the robot observed. |
-| 3D representation | XYZ or XYZRGB point samples mapped to an embedding `z` | Provides the retrieval key for Uni3D, PTv3, and geometry baselines. |
-| Trajectory | Joint positions, velocities, gripper state, gripper pose | Stores what the robot did during the episode. |
-| Outcome metadata | Success flag, task, variation, episode ID, source | Supports grouping, filtering, and analysis. |
-| Manifest row | Paths, split, checksums, provenance | Provides a reproducible index into the database. |
+| Observation | $o_t=(I_t,D_t,P_t,C_t)$: RGB, depth, point cloud, camera metadata | Describes what the robot observed. |
+| 3D representation | $P_t=\{(x_j,y_j,z_j,r_j,g_j,b_j)\}_{j=1}^{M}\to z_e$ | Provides the retrieval key for Uni3D, PTv3, and geometry baselines. |
+| Trajectory | $\tau_e=\{(q_t,\dot{q}_t,g_t,p_t)\}_{t=1}^{T_e}$ | Stores what the robot did during the episode. |
+| Outcome metadata | $m_e=(y_e,\ell_e,v_e,s_e)$: success, task, variation, source | Supports grouping, filtering, and analysis. |
+| Manifest row | $r_e=(id_e,paths_e,split_e,hash_e)$ | Provides a reproducible index into the database. |
 
 The exported layout separates `observation.npz`, `trajectory.npz`, and
 `metadata.json`, with one row in `manifest.parquet` per episode. In the full
@@ -495,36 +495,42 @@ Let `e_q` denote a query episode and let `D = {e_1, ..., e_N}` denote the
 candidate database. An encoder with parameters `theta` maps the episode
 observation `X_e` to an embedding:
 
-```text
-z_e = f_theta(X_e),       z_e in R^d
-```
+$$
+z_e = f_{\theta}(X_e), \qquad z_e \in \mathbb{R}^{d}
+$$
 
 The ranking score is cosine similarity:
 
-```text
-s(e_q, e_i) = (z_q dot z_i) / (||z_q||_2 ||z_i||_2)
-R_k(e_q) = argsort_i(s(e_q, e_i))[:k]
-```
+$$
+s(e_q,e_i) = \frac{z_q^{\top}z_i}{\lVert z_q\rVert_2\lVert z_i\rVert_2},
+\qquad R_k(e_q) = \operatorname{argsort}_{i}\,s(e_q,e_i)[:k]
+$$
 
 Here `R_k(e_q)` is the ordered top-k retrieval list. If `rel(q, i)` is one
 when candidate `i` belongs to the same task relevance group as query `q`, then
 the principal metrics are:
 
-```text
-Precision@k = (1/k) sum_{i in R_k(q)} rel(q, i)
-Recall@k = sum_{i in R_k(q)} rel(q, i) / sum_{i in D} rel(q, i)
-HitRate@k = 1[sum_{i in R_k(q)} rel(q, i) > 0]
-MRR = 1 / rank_q,       rank_q = first relevant rank
-```
+$$
+\operatorname{Precision}@k = \frac{1}{k}\sum_{i\in R_k(q)}\operatorname{rel}(q,i)
+$$
+$$
+\operatorname{Recall}@k = \frac{\sum_{i\in R_k(q)}\operatorname{rel}(q,i)}{\sum_{i\in D}\operatorname{rel}(q,i)}
+$$
+$$
+\operatorname{HitRate}@k = \mathbf{1}\left[\sum_{i\in R_k(q)}\operatorname{rel}(q,i)>0\right],
+\qquad \operatorname{MRR}=\frac{1}{\operatorname{rank}_q}
+$$
 
 Mean Average Precision and NDCG average rank-sensitive relevance across
 queries. For the action-aware projection head, the frozen Uni3D embedding is
 mapped to a trajectory signature by a trainable MLP:
 
-```text
-h_phi(z_e) = MLP_phi(z_e)
-L(phi) = (1/|T|) sum_{e in T} ||h_phi(z_e) - a_e||_2^2
-```
+$$
+h_{\phi}(z_e) = \operatorname{MLP}_{\phi}(z_e),
+\qquad
+\mathcal{L}(\phi) = \frac{1}{|\mathcal{T}|}\sum_{e\in\mathcal{T}}
+\lVert h_{\phi}(z_e)-a_e\rVert_2^2
+$$
 
 `a_e` is the trajectory-state signature derived from the episode, `phi` are
 the MLP parameters, and the Uni3D parameters `theta` remain frozen. The held-
