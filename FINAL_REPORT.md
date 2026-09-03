@@ -125,7 +125,64 @@ is relevant when it belongs to the same task group as the query. This is a
 well-defined retrieval protocol, but it is not equivalent to measuring whether
 the retrieved trajectory is executable in a new scene.
 
-### 2.1.1 Code Structure
+In the terminology of this report, a **task** is a category of manipulation
+problem, such as opening a drawer. An **episode** is one recorded attempt at one
+task instance, from reset to termination. Thus, one task can contain many
+episodes. A **query** is the episode whose observation is used to search the
+database; a **candidate** is an episode eligible to be retrieved. The query is
+not itself counted as a candidate in leave-one-out evaluation.
+
+### 2.1.1 Task Definitions
+
+The full benchmark contains the following 19 RLBench task categories:
+
+| Task | Plain-language meaning |
+| --- | --- |
+| `reach_target` | Move the robot end-effector to a target location. |
+| `open_drawer` | Pull open a drawer using its handle. |
+| `slide_block_to_color_target` | Slide a block to a target with the matching color. |
+| `sweep_to_dustpan_of_size` | Sweep material into a dustpan of the requested size. |
+| `meat_off_grill` | Remove a piece of meat from a grill. |
+| `turn_tap` | Rotate a tap handle to the required state. |
+| `put_item_in_drawer` | Pick up an item and place it inside a drawer. |
+| `close_jar` | Close a jar by placing or rotating its lid. |
+| `reach_and_drag` | Reach an object and drag it to a target region. |
+| `stack_blocks` | Place blocks on one another in a stack. |
+| `light_bulb_in` | Insert a light bulb into its socket. |
+| `put_money_in_safe` | Place money inside a safe. |
+| `place_wine_at_rack_location` | Place a wine bottle at a specified rack location. |
+| `put_groceries_in_cupboard` | Place grocery items inside a cupboard. |
+| `place_shape_in_shape_sorter` | Insert a shape into the matching sorter opening. |
+| `push_buttons` | Press the required buttons. |
+| `insert_onto_square_peg` | Insert an object onto a square peg. |
+| `stack_cups` | Stack cups in the required arrangement. |
+| `place_cups` | Place cups at the required locations. |
+
+The task name is used to define relevance groups in the main evaluation. The
+episode identifier distinguishes separate attempts within a task, and the
+variation identifier records a task variation when available.
+
+### 2.1.2 Robotic Experience Database
+
+The experience database is an episode-indexed collection of scene observations,
+trajectories, and metadata. It is not a text-only RAG index: the retrieval key
+is computed from 3D or state observations, while the retrieved record may also
+contain the trajectory that could be used by a downstream controller.
+
+| Database component | Typical contents | Role in this project |
+| --- | --- | --- |
+| Observation | RGB, depth, world-frame point cloud, camera metadata | Describes what the robot observed. |
+| 3D representation | XYZ or XYZRGB point samples mapped to an embedding `z` | Provides the retrieval key for Uni3D, PTv3, and geometry baselines. |
+| Trajectory | Joint positions, velocities, gripper state, gripper pose | Stores what the robot did during the episode. |
+| Outcome metadata | Success flag, task, variation, episode ID, source | Supports grouping, filtering, and analysis. |
+| Manifest row | Paths, split, checksums, provenance | Provides a reproducible index into the database. |
+
+The exported layout separates `observation.npz`, `trajectory.npz`, and
+`metadata.json`, with one row in `manifest.parquet` per episode. In the full
+dataset, the database contains 1,804 episodes over 19 tasks; the held-out
+projection experiment uses 422 training episodes and 141 test episodes.
+
+### 2.1.3 Code Structure
 
 The repository is organized around a small, reproducible experiment pipeline:
 
@@ -179,14 +236,54 @@ referenced by their recorded paths and hashes.
 All methods use the same episode database, relevance annotations, and ranking
 metrics. The retrieval cutoffs are k=1, 2, and 3.
 
-### 2.3 Metrics
+### 2.3 3D Geometric Representations
+
+For an episode `e`, the encoder receives a fixed-size representation of its
+point-cloud observations and returns a vector `z_e`. The exact network differs
+by method, but the retrieval interface is the same: encode every database
+candidate once, encode the query, compare vectors, and rank candidates by
+similarity.
+
+| Representation | Input | What it captures | Status |
+| --- | --- | --- | --- |
+| `geometry_only` | XYZ point samples | Coarse spatial shape and arrangement without color | Project baseline |
+| `rgb_histogram` | RGB observations | Global color distribution | Project baseline |
+| `global_color` | RGB summary statistics | Compact appearance and color cues | Project baseline |
+| `pose_descriptor` | Compact state/pose features | Robot and object configuration cues | Project baseline |
+| `Uni3D` | XYZRGB point cloud | Pretrained learned 3D foundation representation | Real pretrained backend |
+| `PTv3` | Point-cloud coordinates and features | Pretrained serialized point-transformer features | Real Pointcept backend |
+
+Uni3D and PTv3 are external pretrained model runtimes. The project code
+provides their adapters, input conversion, checkpoint loading, device
+selection, and common embedding interface; it does not claim authorship of the
+upstream architectures or weights.
+
+### 2.4 Retrieval, Offline Downstream, and Simulator Evidence
+
+These are three different levels of evidence and should not be conflated:
+
+| Level | Operation | What it demonstrates | What it does not demonstrate |
+| --- | --- | --- | --- |
+| Retrieval | Rank stored candidate episodes for a query | Whether the representation retrieves same-task episodes | That a retrieved trajectory is executable |
+| Offline downstream | Transfer or compare retrieved trajectory signatures without launching simulation | Whether retrieval can provide a useful downstream signal | Closed-loop control or planning success |
+| Simulator integration | Launch CoppeliaSim through PyRep/RLBench and replay stored states/actions | Whether the software pipeline can initialize and execute a pilot | A learned planner, especially when actions are derived from state |
+
+**CoppeliaSim** is the simulator process. **PyRep** is the Python interface that
+connects code to CoppeliaSim, and **RLBench** supplies manipulation tasks,
+scene variations, demonstrations, and task APIs on top of that simulator. In
+our pilot, headless OpenGL initialization succeeded, but the available export
+contained derived joint-position replay rather than explicit ground-truth
+action arrays. The resulting 0/4 success rate is therefore an integration
+diagnostic, not a learned-planning result.
+
+### 2.5 Metrics
 
 For each query, candidates are ranked by embedding similarity. We report
 precision@k, recall@k, mean reciprocal rank (MRR), mean average precision@k
 (MAP@k), normalized discounted cumulative gain (NDCG@k), Top-1 accuracy, mean
 similarity scores, median first relevant rank, and hit rate@k.
 
-### 2.4 Action-Aware Projection Head
+### 2.6 Action-Aware Projection Head
 
 The projection-head pilot freezes the Uni3D backbone and trains a small MLP to
 predict a compact trajectory-state signature derived from gripper pose. The
@@ -194,7 +291,7 @@ MLP is not an action-generating planner and does not fine-tune Uni3D. Training
 uses 422 episodes, while held-out evaluation uses 141 test queries against 422
 train candidates, with zero train/test overlap.
 
-### 2.5 Software Environment
+### 2.7 Software Environment
 
 The experiments required a larger native and scientific Python stack than the
 retrieval scripts alone. Important components were PyTorch with the validated
@@ -206,14 +303,14 @@ are separated between `requirements.txt` and `requirements-cluster.txt`; exact
 installed versions and checkpoint hashes are recorded in the reproducibility
 artifacts.
 
-### 2.6 Robustness Protocol
+### 2.8 Robustness Protocol
 
 Robustness perturbations are applied to query observations while the candidate
 database remains clean. The tested conditions are viewpoint rotation, partial
 occlusion, and geometry noise. This is a controlled proxy for scene variation;
 it does not replace evaluation on independently generated object geometries.
 
-### 2.7 Implementation Ownership and External Code
+### 2.9 Implementation Ownership and External Code
 
 The experiment orchestration and evaluation code in this repository was written
 for this project. This includes dataset export and validation, manifest and
@@ -391,6 +488,48 @@ results are produced by `scripts/evaluate_retrieval.py`, robustness by
 `scripts/plot_report_figures.py`. Reproduction instructions are provided in
 `README.md`, `ENVIRONMENT_REPRODUCTION.md`, `requirements.txt`, and
 `requirements-cluster.txt`.
+
+## Appendix B: Mathematical Definitions
+
+Let `e_q` denote a query episode and let `D = {e_1, ..., e_N}` denote the
+candidate database. An encoder with parameters `theta` maps the episode
+observation `X_e` to an embedding:
+
+```text
+z_e = f_theta(X_e),       z_e in R^d
+```
+
+The ranking score is cosine similarity:
+
+```text
+s(e_q, e_i) = (z_q dot z_i) / (||z_q||_2 ||z_i||_2)
+R_k(e_q) = argsort_i(s(e_q, e_i))[:k]
+```
+
+Here `R_k(e_q)` is the ordered top-k retrieval list. If `rel(q, i)` is one
+when candidate `i` belongs to the same task relevance group as query `q`, then
+the principal metrics are:
+
+```text
+Precision@k = (1/k) sum_{i in R_k(q)} rel(q, i)
+Recall@k = sum_{i in R_k(q)} rel(q, i) / sum_{i in D} rel(q, i)
+HitRate@k = 1[sum_{i in R_k(q)} rel(q, i) > 0]
+MRR = 1 / rank_q,       rank_q = first relevant rank
+```
+
+Mean Average Precision and NDCG average rank-sensitive relevance across
+queries. For the action-aware projection head, the frozen Uni3D embedding is
+mapped to a trajectory signature by a trainable MLP:
+
+```text
+h_phi(z_e) = MLP_phi(z_e)
+L(phi) = (1/|T|) sum_{e in T} ||h_phi(z_e) - a_e||_2^2
+```
+
+`a_e` is the trajectory-state signature derived from the episode, `phi` are
+the MLP parameters, and the Uni3D parameters `theta` remain frozen. The held-
+out protocol trains on 422 episodes and evaluates queries from 141 disjoint
+test episodes against the training candidate set.
 
 ## References
 

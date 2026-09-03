@@ -18,12 +18,11 @@ planning.
 - Dataset export and validation are implemented.
 - Retrieval baselines already exist.
 - Retrieval evaluation already exists.
-- The project is now focused on:
-  - scaling the dataset,
-  - making retrieval more color-aware,
-  - adding more RLBench tasks,
-  - then integrating learned 3D encoders such as Uni3D and Point
-    Transformer V3.
+- The completed project includes a full 19-task dataset, retrieval baselines,
+  real Uni3D and Point Transformer V3 backends, robustness evaluation, a
+  held-out action-aware projection-head pilot, and offline downstream evidence.
+- A learned action-generating planner was not trained; the simulator result is
+  explicitly a replay/integration pilot.
 
 ## 3. Core Libraries
 
@@ -37,6 +36,12 @@ planning.
 | NumPy | Array library. | It stores observations, trajectories, and point clouds. |
 | Pandas | Table library. | It stores the dataset manifest and evaluation summaries. |
 | PyArrow | Columnar storage backend. | It lets the manifest be saved as Parquet. |
+| PyTorch | Tensor and neural-network framework. | It runs the learned encoders and the projection head. |
+| Torch Geometric | Point-cloud operator ecosystem. | It supports compatible point-cloud extensions in the environment. |
+| spconv / cumm | Sparse convolution and CUDA kernel stack. | Required by the Pointcept PTv3 runtime. |
+| timm | Vision-model building blocks. | Required by the Uni3D and Pointcept runtime imports. |
+| DeepSpeed | Training and runtime utility library. | Required by the official Uni3D code path. |
+| `requirements-cluster.txt` | Cluster-specific dependency pins. | Separates native CUDA and simulator dependencies from CPU setup. |
 
 ## 4. Important Files
 
@@ -130,6 +135,28 @@ The train/val/test partition.
 The repo splits by episode, not by frame, so frames from the same episode never
 leak across splits.
 
+### Task, episode, query, and candidate
+
+A **task** is a manipulation category, such as `open_drawer`. An **episode**
+is one complete recorded attempt of one task instance. A dataset can therefore
+contain many episodes for one task. A **query** is the episode being searched;
+a **candidate** is an episode in the searchable database. In leave-one-out
+retrieval, the query itself is excluded from its candidate set.
+
+### Robotic experience database
+
+The database is not just a table of vectors. Each row points to an observation,
+trajectory, and metadata record:
+
+```text
+episode_id -> observation.npz + trajectory.npz + metadata.json
+           -> one row in manifest.parquet
+```
+
+The observation contains what the robot saw, the trajectory contains what the
+robot did, and the metadata identifies task, variation, split, outcome, and
+provenance.
+
 ## 6. Observation Terms
 
 ### `front_rgb[0]`
@@ -206,6 +233,30 @@ sim(z_query, z_i) = (z_query dot z_i) / (||z_query|| * ||z_i||)
 ```
 
 The top candidate is the one with the highest similarity score.
+
+### Query and retrieval
+
+For query episode `q`, retrieval computes `z_q`, compares it with each candidate
+embedding `z_i`, and returns the candidates with the largest similarity. This
+is a nearest-neighbor experiment, not a language-generation step. `k=1`, `2`,
+and `3` mean that the evaluation keeps the first one, two, or three ranked
+candidates.
+
+### Action-Aware Projection Head
+
+The action-aware projection head is a small trainable MLP placed after a frozen
+backbone. It learns to map a scene embedding to a compact trajectory-state
+signature. It is action-aware because its target comes from robot trajectory
+information, but it is not an action decoder and does not generate executable
+control commands.
+
+### Offline downstream and simulator integration
+
+The offline downstream proxy tests whether retrieved trajectory information can
+be transferred or compared without executing a controller. Simulator
+integration launches CoppeliaSim through PyRep and RLBench. These are distinct
+from planning success: a replay pilot can verify software integration without
+showing that a learned policy solved a new task.
 
 ## 9. Evaluation Terms
 
