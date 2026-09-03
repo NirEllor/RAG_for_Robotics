@@ -54,16 +54,12 @@ def _inline_markup(
     text = re.sub(r"\[([^]]+)\]\(([^)]+)\)", stash_link, text)
     def inline_math(match: re.Match[str]) -> str:
         expression = _normalise_math(match.group(1))
-        if math_directory is None or math_counter is None:
-            return f"<font name='Courier'>{html.escape(expression)}</font>"
-        index = math_counter[0]
-        math_counter[0] += 1
-        path = math_directory / f"inline-equation-{index:03d}.png"
-        math_to_image(f"${expression}$", str(path), dpi=220, format="png", color="#173f5f")
-        # Keep inline equations inside the narrowest report-table cell.
-        width = min(72, max(18, 3.1 * len(expression)))
-        height = 8 if len(expression) < 24 else 9
-        return f'<img src="{path.as_posix()}" width="{width:.1f}" height="{height}" valign="middle"/>'
+        # Inline math is kept at the surrounding text size. Display equations
+        # below are rendered separately, so table cells do not contain stretched
+        # image glyphs that can collide with explanatory text.
+        expression = re.sub(r"\\([A-Za-z]+)", r"\1", expression)
+        expression = expression.replace("{", "").replace("}", "")
+        return f"<font name='Courier' size='7'>{html.escape(expression)}</font>"
 
     text = re.sub(r"\$([^$]+)\$", inline_math, text)
     text = re.sub(r"`([^`]+)`", r"<font name='Courier'>\1</font>", text)
