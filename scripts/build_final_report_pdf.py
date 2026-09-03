@@ -61,8 +61,8 @@ def _inline_markup(
         path = math_directory / f"inline-equation-{index:03d}.png"
         math_to_image(f"${expression}$", str(path), dpi=220, format="png", color="#173f5f")
         # Keep inline equations inside the narrowest report-table cell.
-        width = min(100, max(22, 4.2 * len(expression)))
-        height = 10 if len(expression) < 24 else 12
+        width = min(72, max(18, 3.1 * len(expression)))
+        height = 8 if len(expression) < 24 else 9
         return f'<img src="{path.as_posix()}" width="{width:.1f}" height="{height}" valign="middle"/>'
 
     text = re.sub(r"\$([^$]+)\$", inline_math, text)
@@ -101,7 +101,7 @@ def _math_image(expression: str, directory: Path, index: int) -> Image:
     expression = _normalise_math(expression)
     math_to_image(f"${expression}$", str(path), dpi=220, format="png", color="#173f5f")
     image = Image(str(path))
-    image._restrictSize(5.7 * inch, 0.42 * inch)
+    image._restrictSize(4.6 * inch, 0.30 * inch)
     image.hAlign = "LEFT"
     return image
 
