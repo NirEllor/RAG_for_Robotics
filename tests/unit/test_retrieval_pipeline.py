@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -161,6 +162,14 @@ def test_geometry_only_encoder_produces_unit_vector():
 
     assert vector.ndim == 1
     assert np.isclose(np.linalg.norm(vector), 1.0)
+
+
+def test_pose_and_geometry_descriptors_ignore_episode_seed():
+    episode = _make_episode("episode0", 0.0)
+    different_seed = replace(episode, metadata={"episode": {"seed": 9999}})
+
+    for encoder in (PoseDescriptorEncoder(), GeometryOnlyEncoder()):
+        assert np.array_equal(encoder.encode(episode), encoder.encode(different_seed))
 
 
 def test_build_encoder_supports_uni3d_and_ptv3_backends():

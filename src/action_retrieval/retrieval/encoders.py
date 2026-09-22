@@ -757,8 +757,6 @@ class PoseDescriptorEncoder:
         else:
             features.extend([np.zeros((1,), dtype=np.float32) for _ in range(2)])
 
-        episode_seed = episode.metadata.get("episode", {}).get("seed", 0)
-        features.append(np.array([float(episode_seed)], dtype=np.float32))
         features.append(np.array([float(len(joint_positions) if joint_positions is not None else 0)], dtype=np.float32))
 
         return _normalize(np.concatenate(features, axis=0))
@@ -933,8 +931,6 @@ class GeometryOnlyEncoder:
         else:
             features.extend([np.zeros((1,), dtype=np.float32) for _ in range(2)])
 
-        episode_seed = episode.metadata.get("episode", {}).get("seed", 0)
-        features.append(np.array([float(episode_seed)], dtype=np.float32))
         features.append(np.array([float(len(joint_positions) if joint_positions is not None else 0)], dtype=np.float32))
 
         return _normalize(np.concatenate(features, axis=0))
